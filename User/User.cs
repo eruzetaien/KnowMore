@@ -1,6 +1,8 @@
 public class AppUser
 {
-    public long Id { get; set; }
+    public required long Id { get; set; }
+    public required string Provider { get; set;}
+    public required string ProviderId { get; set;}
     public string Username { get; set; } = string.Empty;
     public string NormalizedUsername { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

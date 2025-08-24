@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace User.Migrations
 {
     [DbContext(typeof(UserDb))]
-    [Migration("20250824032225_InitialCreate")]
+    [Migration("20250824134503_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -36,6 +36,14 @@ namespace User.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("NormalizedUsername")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProviderId")
                         .IsRequired()
                         .HasColumnType("text");
 
