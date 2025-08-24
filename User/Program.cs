@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using DotNetEnv;
 using SnowflakeGenerator;
+using System.ComponentModel.DataAnnotations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,7 +28,6 @@ Settings settings = new()
     CustomEpoch = new DateTimeOffset(2025, 8, 23, 0, 0, 0, TimeSpan.Zero)
 };
 builder.Services.AddSingleton<Snowflake>(sp => new Snowflake(settings));
-
 
 // Configure Swagger Middleware
 builder.Services.AddEndpointsApiExplorer();
@@ -76,8 +76,17 @@ static async Task<IResult> GetUser(long id, UserDb db)
 
 static async Task<IResult> CreateUser(CreateUserDTO userDTO, UserDb db, Snowflake snowflake)
 {
+    // Data validation 
+    var context = new ValidationContext(userDTO, serviceProvider: null, items: null);
+    var results = new List<ValidationResult>();
+    if (!Validator.TryValidateObject(userDTO, context, results, true))
+    {
+        return TypedResults.BadRequest(results.Select(r => r.ErrorMessage));
+    }
+
     // Ensure unique username
-    if (await db.Users.AnyAsync(u => u.Username == userDTO.Username))
+    String normalizedUsername = userDTO.Username.ToLowerInvariant();
+    if (await db.Users.AnyAsync(u => u.NormalizedUsername == normalizedUsername))
     {
         return TypedResults.BadRequest($"Username '{userDTO.Username}' already exists.");
     }
@@ -86,11 +95,13 @@ static async Task<IResult> CreateUser(CreateUserDTO userDTO, UserDb db, Snowflak
     {
         Id = snowflake.NextID(),
         Username = userDTO.Username,
+        NormalizedUsername = normalizedUsername,
         Description = userDTO.Description
+
     };
     
     db.Users.Add(user);
     await db.SaveChangesAsync();
 
-    return TypedResults.Created($"/users/{user.Id}", user);
+    return TypedResults.Created($"/users/{user.Id}", new UserDTO(user));
 }

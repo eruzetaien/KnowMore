@@ -10,7 +10,7 @@ class UserDb : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<AppUser>()
-            .HasIndex(u => u.Username)
+            .HasIndex(u => u.NormalizedUsername)
             .IsUnique();
     }
 }

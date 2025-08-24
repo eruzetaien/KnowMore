@@ -32,11 +32,18 @@ namespace User.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("NormalizedUsername")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("NormalizedUsername")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });
