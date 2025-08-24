@@ -55,7 +55,7 @@ if (app.Environment.IsDevelopment())
 RouteGroupBuilder userItems = app.MapGroup("users");
 
 userItems.MapGet("/", GetAllUsers);
-userItems.MapPost("/", CreateUser);
+userItems.MapPost("/", CreateUser).AddEndpointFilter<ValidationFilter<CreateUserDTO>>();
 userItems.MapGet("/{id}", GetUser);
 
 app.Run();
@@ -76,14 +76,6 @@ static async Task<IResult> GetUser(long id, UserDb db)
 
 static async Task<IResult> CreateUser(CreateUserDTO userDTO, UserDb db, Snowflake snowflake)
 {
-    // Data validation 
-    var context = new ValidationContext(userDTO, serviceProvider: null, items: null);
-    var results = new List<ValidationResult>();
-    if (!Validator.TryValidateObject(userDTO, context, results, true))
-    {
-        return TypedResults.BadRequest(results.Select(r => r.ErrorMessage));
-    }
-
     // Ensure unique username
     String normalizedUsername = userDTO.Username.ToLowerInvariant();
     if (await db.Users.AnyAsync(u => u.NormalizedUsername == normalizedUsername))
