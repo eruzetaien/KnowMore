@@ -77,7 +77,13 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(jwtKeyBytes)
     };
 });
-builder.Services.AddAuthorization();
+
+builder.Services.AddAuthorization(options =>
+{
+    options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
+                                .RequireAuthenticatedUser()
+                                .Build();
+});
 
 builder.Services.AddCors(options =>
 {
@@ -184,20 +190,52 @@ app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake s
 
 app.MapGet("/me", async (HttpContext context, UserDb db) =>
 {
-    if (context.User.Identity?.IsAuthenticated != true)
-        return Results.Unauthorized();
-
-    string? sub = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-    if (string.IsNullOrEmpty(sub) || !long.TryParse(sub, out long userId))
-        return Results.Unauthorized();
+    string sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    long userId = long.Parse(sub); 
 
     AppUser? user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
     if (user is null)
-        return Results.Unauthorized();
+        return Results.NotFound();
 
     return Results.Ok(new UserDTO(user));
 })
-.RequireAuthorization(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme });
+.RequireAuthorization();
+
+app.MapPut("/update", async (HttpContext context, UpdateUserDTO updateDto, UserDb db) =>
+{
+    string sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    long userId = long.Parse(sub); 
+
+    var user = await db.Users.FindAsync(userId);
+    if (user == null) return Results.NotFound();
+    
+    // Validation
+    if (!string.IsNullOrWhiteSpace(updateDto.Username))
+    {
+        string normalizedUsername = updateDto.Username.ToLowerInvariant();
+        if (await db.Users.AnyAsync(u =>
+            u.NormalizedUsername == normalizedUsername &&
+            u.Id != userId))
+        {
+            return TypedResults.BadRequest($"Username '{updateDto.Username}' already exists.");
+        }
+    }
+
+    // Update
+    if (!string.IsNullOrWhiteSpace(updateDto.Username))
+        user.Username = updateDto.Username;
+
+    if (!string.IsNullOrWhiteSpace(updateDto.Description))
+        user.Description = updateDto.Description;
+
+    user.UpdatedAt = DateTime.UtcNow;
+
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new UserDTO(user));
+})
+.RequireAuthorization()
+.AddEndpointFilter<ValidationFilter<UpdateUserDTO>>();
 
 app.MapGet("/logout", async (HttpContext context) =>
 {

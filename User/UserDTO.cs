@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-public class CreateUserDTO
+public class UpdateUserDTO
 {
     [Required(ErrorMessage = "Username is required.")]
     [StringLength(20, MinimumLength = 4, ErrorMessage = "Username must be between 4 and 20 characters.")]
