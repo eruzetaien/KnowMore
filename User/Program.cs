@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using DotNetEnv;
 using SnowflakeGenerator;
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.IdentityModel.Tokens.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,7 +33,12 @@ Settings settings = new()
 };
 builder.Services.AddSingleton<Snowflake>(sp => new Snowflake(settings));
 
-// Login with Google Service
+// Login with Google Service & Configure JWT 
+string jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET")
+             ?? throw new InvalidOperationException("Missing Jwt:Key");
+
+byte[] jwtKeyBytes = Encoding.UTF8.GetBytes(jwtKey);
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = "Cookies";
@@ -56,6 +63,17 @@ builder.Services.AddAuthentication(options =>
         identity.AddClaim(new Claim("provider", "Google"));
 
         return Task.CompletedTask;
+    };
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = false, 
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(jwtKeyBytes)
     };
 });
 
@@ -86,10 +104,6 @@ if (app.Environment.IsDevelopment())
 
 RouteGroupBuilder userGroup = app.MapGroup("users");
 
-userGroup.MapGet("/", GetAllUsers);
-userGroup.MapPost("/", CreateUser).AddEndpointFilter<ValidationFilter<CreateUserDTO>>();
-userGroup.MapGet("/{id}", GetUser);
-
 app.MapGet("/login/{provider}", async (HttpContext context, string provider) =>
 {
     var authProperties = new AuthenticationProperties
@@ -109,12 +123,12 @@ app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake s
 
         if (providerId is not null && provider is not null)
         {
-            var user = await db.Users
+            AppUser? user = await db.Users
                 .FirstOrDefaultAsync(u => u.Provider == provider && u.ProviderId == providerId);
 
             if (user is null)
             {
-                var id = snowflake.NextID();
+                long id = snowflake.NextID();
                 string username;
                 do
                 {
@@ -135,7 +149,22 @@ app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake s
                 db.Users.Add(user);
                 await db.SaveChangesAsync();
             }
-            return Results.Ok(user);
+
+            // JWT
+            SigningCredentials creds = new (new SymmetricSecurityKey(jwtKeyBytes), SecurityAlgorithms.HmacSha256);
+            Claim[] claims =
+            [
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString())
+            ];
+
+            JwtSecurityToken token = new(
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(8),
+                signingCredentials: creds
+            );
+
+            string tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+            return Results.Ok(new UserDTO(user,tokenString));
         }
     }
 
@@ -149,42 +178,3 @@ app.MapGet("/logout", async (HttpContext context) =>
 });
 
 app.Run();
-
-static async Task<IResult> GetAllUsers(UserDb db)
-{
-    return TypedResults.Ok(await db.Users.Select(x => new UserDTO(x)).ToArrayAsync());
-}
-
-static async Task<IResult> GetUser(long id, UserDb db)
-{
-    return await db.Users.FindAsync(id)
-        is AppUser user
-            ? TypedResults.Ok(new UserDTO(user))
-            : TypedResults.NotFound();
-}
-
-static async Task<IResult> CreateUser(CreateUserDTO userDTO, UserDb db, Snowflake snowflake)
-{
-    // Ensure unique username
-    String normalizedUsername = userDTO.Username.ToLowerInvariant();
-    if (await db.Users.AnyAsync(u => u.NormalizedUsername == normalizedUsername))
-    {
-        return TypedResults.BadRequest($"Username '{userDTO.Username}' already exists.");
-    }
-
-    AppUser user = new()
-    {
-        Id = snowflake.NextID(),
-        Provider = "Google",
-        ProviderId = "",
-        Username = userDTO.Username,
-        NormalizedUsername = normalizedUsername,
-        Description = userDTO.Description
-
-    };
-
-    db.Users.Add(user);
-    await db.SaveChangesAsync();
-
-    return TypedResults.Created($"/users/{user.Id}", new UserDTO(user));
-}

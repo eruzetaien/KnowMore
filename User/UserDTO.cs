@@ -13,9 +13,12 @@ public class CreateUserDTO
 
 public class UserDTO
 {
-    public long Id { get; set; }
-    public string Username { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public UserDTO(AppUser user) =>
-    (Id, Username, Description) = (user.Id, user.Username, user.Description);
+    public string Username { get; set; }
+    public string Description { get; set; }
+    public string Token { get; set; }
+    public UserDTO(AppUser user, string userToken) {
+        Username = user.Username;
+        Description = user.Description;
+        Token = userToken;
+    }
 }
