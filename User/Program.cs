@@ -6,6 +6,8 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +21,6 @@ var connectionString =
     $"Database={Environment.GetEnvironmentVariable("DB_NAME")};" +
     $"Username={Environment.GetEnvironmentVariable("DB_USER")};" +
     $"Password={Environment.GetEnvironmentVariable("DB_PASSWORD")}";
-
 
 // Register DbContext with PostgreSQL
 builder.Services.AddDbContext<UserDb>(options =>
@@ -69,12 +70,21 @@ builder.Services.AddAuthentication(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = false, 
+        ValidateIssuer = false,
         ValidateAudience = false,
-        ValidateLifetime = true,
+        ValidateLifetime = false, // For Dev 
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(jwtKeyBytes)
     };
+});
+builder.Services.AddAuthorization();
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader());
 });
 
 // Configure Swagger Middleware
@@ -88,7 +98,9 @@ builder.Services.AddOpenApiDocument(config =>
 
 var app = builder.Build();
 
+app.UseCors();
 app.UseAuthentication();
+app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {
@@ -116,7 +128,7 @@ app.MapGet("/login/{provider}", async (HttpContext context, string provider) =>
 
 app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake snowflake) =>
 {
-     if (context.User.Identity?.IsAuthenticated ?? false)
+    if (context.User.Identity?.IsAuthenticated ?? false)
     {
         string? provider = context.User.FindFirst("provider")?.Value;
         string? providerId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -133,15 +145,15 @@ app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake s
                 do
                 {
                     username = Util.GetRandomUsername();
-                } 
+                }
                 while (await db.Users.AnyAsync(u => u.Username == username));
-                
+
                 user = new AppUser
                 {
                     Id = id,
                     Provider = provider,
                     ProviderId = providerId,
-                    Username = username, 
+                    Username = username,
                     NormalizedUsername = username.ToLowerInvariant(),
                     Description = string.Empty
                 };
@@ -151,7 +163,7 @@ app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake s
             }
 
             // JWT
-            SigningCredentials creds = new (new SymmetricSecurityKey(jwtKeyBytes), SecurityAlgorithms.HmacSha256);
+            SigningCredentials creds = new(new SymmetricSecurityKey(jwtKeyBytes), SecurityAlgorithms.HmacSha256);
             Claim[] claims =
             [
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString())
@@ -164,12 +176,32 @@ app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake s
             );
 
             string tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-            return Results.Ok(new UserDTO(user,tokenString));
+            return Results.Ok(new UserDTO(user, tokenString));
         }
     }
 
     return Results.Unauthorized();
 });
+
+app.MapGet("/me", async (HttpContext context, UserDb db) =>
+{
+    if (context.User.Identity?.IsAuthenticated != true)
+        return Results.Json(new { error = "User is not authenticated" }, statusCode: 401);
+
+    string? sub = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    if (string.IsNullOrEmpty(sub) || !long.TryParse(sub, out long userId))
+    { 
+        var claims = context.User.Claims.Select(c => new { c.Type, c.Value });
+        return Results.Json(new { error = "JWT claim missing", claims }, statusCode: 401);
+    }
+
+    AppUser? user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+    if (user is null)
+        return Results.Json(new { error = "User not found in database" }, statusCode: 401);
+
+    return Results.Ok(new UserDTO(user, sub));
+})
+.RequireAuthorization(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme });
 
 app.MapGet("/logout", async (HttpContext context) =>
 {
