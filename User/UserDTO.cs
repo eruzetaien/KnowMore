@@ -15,12 +15,8 @@ public class UserDTO
 {
     public string Username { get; set; }
     public string Description { get; set; }
-    public string Token { get; set; }
-    public UserDTO(AppUser user, string userToken)
-    {
-        Username = user.Username;
-        Description = user.Description;
-        Token = userToken;
-    }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; } 
+    public UserDTO(AppUser user) =>
+    (Username, Description, CreatedAt, UpdatedAt) = (user.Username, user.Description, user.CreatedAt, user.UpdatedAt);
 }
-

@@ -155,7 +155,6 @@ app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake s
                     ProviderId = providerId,
                     Username = username,
                     NormalizedUsername = username.ToLowerInvariant(),
-                    Description = string.Empty
                 };
 
                 db.Users.Add(user);
@@ -176,7 +175,7 @@ app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake s
             );
 
             string tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-            return Results.Ok(new UserDTO(user, tokenString));
+            return Results.Ok(new { Token = tokenString });
         }
     }
 
@@ -186,20 +185,17 @@ app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake s
 app.MapGet("/me", async (HttpContext context, UserDb db) =>
 {
     if (context.User.Identity?.IsAuthenticated != true)
-        return Results.Json(new { error = "User is not authenticated" }, statusCode: 401);
+        return Results.Unauthorized();
 
     string? sub = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     if (string.IsNullOrEmpty(sub) || !long.TryParse(sub, out long userId))
-    { 
-        var claims = context.User.Claims.Select(c => new { c.Type, c.Value });
-        return Results.Json(new { error = "JWT claim missing", claims }, statusCode: 401);
-    }
+        return Results.Unauthorized();
 
     AppUser? user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
     if (user is null)
-        return Results.Json(new { error = "User not found in database" }, statusCode: 401);
+        return Results.Unauthorized();
 
-    return Results.Ok(new UserDTO(user, sub));
+    return Results.Ok(new UserDTO(user));
 })
 .RequireAuthorization(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme });
 
