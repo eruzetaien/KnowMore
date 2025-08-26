@@ -134,58 +134,61 @@ app.MapGet("/login/{provider}", async (HttpContext context, string provider) =>
 
 app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake snowflake) =>
 {
-    if (context.User.Identity?.IsAuthenticated ?? false)
+    if (!(context.User.Identity?.IsAuthenticated ?? false))
+        return Results.Unauthorized();
+
+    string? provider = context.User.FindFirst("provider")?.Value;
+    string? providerId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+    if (string.IsNullOrEmpty(provider) || string.IsNullOrEmpty(providerId))
+        return Results.Unauthorized();
+
+    AppUser? user = await db.Users
+        .FirstOrDefaultAsync(u => u.Provider == provider && u.ProviderId == providerId);
+
+    if (user is null)
     {
-        string? provider = context.User.FindFirst("provider")?.Value;
-        string? providerId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        long id = snowflake.NextID();
 
-        if (providerId is not null && provider is not null)
+        string username;
+        do
         {
-            AppUser? user = await db.Users
-                .FirstOrDefaultAsync(u => u.Provider == provider && u.ProviderId == providerId);
-
-            if (user is null)
-            {
-                long id = snowflake.NextID();
-                string username;
-                do
-                {
-                    username = Util.GetRandomUsername();
-                }
-                while (await db.Users.AnyAsync(u => u.Username == username));
-
-                user = new AppUser
-                {
-                    Id = id,
-                    Provider = provider,
-                    ProviderId = providerId,
-                    Username = username,
-                    NormalizedUsername = username.ToLowerInvariant(),
-                };
-
-                db.Users.Add(user);
-                await db.SaveChangesAsync();
-            }
-
-            // JWT
-            SigningCredentials creds = new(new SymmetricSecurityKey(jwtKeyBytes), SecurityAlgorithms.HmacSha256);
-            Claim[] claims =
-            [
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString())
-            ];
-
-            JwtSecurityToken token = new(
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(8),
-                signingCredentials: creds
-            );
-
-            string tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-            return Results.Ok(new { Token = tokenString });
+            username = Util.GetRandomUsername();
         }
+        while (await db.Users.AnyAsync(u => u.Username == username));
+
+        user = new AppUser
+        {
+            Id = id,
+            Provider = provider,
+            ProviderId = providerId,
+            Username = username,
+            NormalizedUsername = username.ToLowerInvariant(),
+        };
+
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
     }
 
-    return Results.Unauthorized();
+    // Issue JWT
+    SigningCredentials creds = new(
+        new SymmetricSecurityKey(jwtKeyBytes),
+        SecurityAlgorithms.HmacSha256
+    );
+
+    Claim[] claims =
+    [
+        new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString())
+    ];
+
+    JwtSecurityToken token = new(
+        claims: claims,
+        expires: DateTime.UtcNow.AddHours(8),
+        signingCredentials: creds
+    );
+
+    string tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+    return Results.Ok(new { Token = tokenString });
 });
 
 app.MapGet("/me", async (HttpContext context, UserDb db) =>
