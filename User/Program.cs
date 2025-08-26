@@ -6,101 +6,23 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Load .env variables
 Env.Load();
 
-// Build connection string from env vars
-var connectionString =
-    $"Host={Environment.GetEnvironmentVariable("DB_HOST")};" +
-    $"Port={Environment.GetEnvironmentVariable("DB_PORT")};" +
-    $"Database={Environment.GetEnvironmentVariable("DB_NAME")};" +
-    $"Username={Environment.GetEnvironmentVariable("DB_USER")};" +
-    $"Password={Environment.GetEnvironmentVariable("DB_PASSWORD")}";
-
-// Register DbContext with PostgreSQL
-builder.Services.AddDbContext<UserDb>(options =>
-    options.UseNpgsql(connectionString));
-
-// Register Snowflake ID generator 
-Settings settings = new()
-{ 
-    MachineID = 1,
-    CustomEpoch = new DateTimeOffset(2025, 8, 23, 0, 0, 0, TimeSpan.Zero)
-};
-builder.Services.AddSingleton<Snowflake>(sp => new Snowflake(settings));
-
-// Login with Google Service & Configure JWT 
 string jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET")
-             ?? throw new InvalidOperationException("Missing Jwt:Key");
-
+                    ?? throw new InvalidOperationException("Missing Jwt:Key");
 byte[] jwtKeyBytes = Encoding.UTF8.GetBytes(jwtKey);
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultScheme = "Cookies";
-    options.DefaultChallengeScheme = "Google";
-})
-.AddCookie()
-.AddGoogle("Google", options =>
-{
-    options.ClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID")
-        ?? throw new InvalidOperationException("Missing GOOGLE_CLIENT_ID environment variable.");
-
-    options.ClientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET")
-        ?? throw new InvalidOperationException("Missing GOOGLE_CLIENT_SECRET environment variable.");
-
-    options.Scope.Clear();
-    options.Scope.Add("email");
-    options.SaveTokens = true;
-
-    options.Events.OnCreatingTicket = ctx =>
-    {
-        var identity = (ClaimsIdentity)ctx.Principal!.Identity!;
-        identity.AddClaim(new Claim("provider", "Google"));
-
-        return Task.CompletedTask;
-    };
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = false,
-        ValidateAudience = false,
-        ValidateLifetime = false, // For Dev 
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(jwtKeyBytes)
-    };
-});
-
-builder.Services.AddAuthorization(options =>
-{
-    options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
-                                .RequireAuthenticatedUser()
-                                .Build();
-});
-
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader());
-});
-
-// Configure Swagger Middleware
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddOpenApiDocument(config =>
-{
-    config.DocumentName = "KnowMoreUserAPI";
-    config.Title = "KnowMoreUserAPI v1";
-    config.Version = "v1";
-});
+builder.Services
+    .AddDatabase<UserDb>()
+    .AddSnowflake(machineId: 1)
+    .AddJwtAuth(jwtKeyBytes)
+    .AddGoogleAuth()
+    .AddCustomCors()
+    .AddSwagger(documentName:"KnowMoreUserAPI", title:"KnowMoreUserAPI", version:"v1");
 
 var app = builder.Build();
 
