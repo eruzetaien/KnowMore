@@ -120,17 +120,15 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-RouteGroupBuilder userGroup = app.MapGroup("users");
-
-app.MapGet("/login/{provider}", async (HttpContext context, string provider) =>
+static async Task ChallengeProvider(HttpContext context, string provider)
 {
     var authProperties = new AuthenticationProperties
     {
         RedirectUri = "/login-callback"
     };
-
     await context.ChallengeAsync(provider, authProperties);
-});
+}
+app.MapGet("/login/google", (HttpContext context) => ChallengeProvider(context, "Google"));
 
 app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake snowflake) =>
 {
