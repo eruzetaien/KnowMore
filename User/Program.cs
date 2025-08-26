@@ -45,7 +45,7 @@ builder.Services.AddAuthentication(options =>
     options.DefaultScheme = "Cookies";
     options.DefaultChallengeScheme = "Google";
 })
-.AddCookie("Cookies")
+.AddCookie()
 .AddGoogle("Google", options =>
 {
     options.ClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID")
@@ -204,11 +204,11 @@ app.MapGet("/me", async (HttpContext context, UserDb db) =>
 app.MapPut("/update", async (HttpContext context, UpdateUserDTO updateDto, UserDb db) =>
 {
     string sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-    long userId = long.Parse(sub); 
+    long userId = long.Parse(sub);
 
     var user = await db.Users.FindAsync(userId);
     if (user == null) return Results.NotFound();
-    
+
     // Validation
     if (!string.IsNullOrWhiteSpace(updateDto.Username))
     {
@@ -236,11 +236,5 @@ app.MapPut("/update", async (HttpContext context, UpdateUserDTO updateDto, UserD
 })
 .RequireAuthorization()
 .AddEndpointFilter<ValidationFilter<UpdateUserDTO>>();
-
-app.MapGet("/logout", async (HttpContext context) =>
-{
-    await context.SignOutAsync("Cookies");
-    return Results.Redirect("/");
-});
 
 app.Run();
