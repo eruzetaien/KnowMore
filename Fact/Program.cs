@@ -34,6 +34,22 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.MapGet("/groups", async (HttpContext context, FactDb db) =>
+{
+    string? sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (string.IsNullOrEmpty(sub) || !long.TryParse(sub, out var userId))
+    {
+        return Results.Unauthorized();
+    }
+
+    List<FactGroup> factGroups = await db.FactGroups
+        .Where(g => g.UserId == userId)
+        .ToListAsync();
+
+    return Results.Ok(factGroups);
+})
+.RequireAuthorization();
+
 app.MapGet("/groups/{id}", async (HttpContext context, long id, FactDb db) =>
 {
     string? sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -42,7 +58,7 @@ app.MapGet("/groups/{id}", async (HttpContext context, long id, FactDb db) =>
         return Results.Unauthorized();
     }
 
-    var factGroup = await db.FactGroups
+    FactGroup? factGroup = await db.FactGroups
         .Where(g => g.Id == id && g.UserId == userId)
         .FirstOrDefaultAsync();
 
