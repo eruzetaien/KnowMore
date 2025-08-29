@@ -38,15 +38,25 @@ app.MapGet("/groups", async (HttpContext context, FactDb db) =>
 {
     string? sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
     if (string.IsNullOrEmpty(sub) || !long.TryParse(sub, out var userId))
-    {
         return Results.Unauthorized();
-    }
 
-    List<FactGroup> factGroups = await db.FactGroups
+
+    var factGroups = await db.FactGroups
+        .Include(g => g.Facts)
         .Where(g => g.UserId == userId)
         .ToListAsync();
 
-    return Results.Ok(factGroups);
+    var factGroupDtoList = factGroups.Select(g => new FactGroupDTO
+    {
+        Id = g.Id,
+        UserId = g.UserId,
+        Name = g.Name,
+        CreatedAt = g.CreatedAt,
+        UpdatedAt = g.UpdatedAt,
+        Facts = g.Facts.Select(f => new FactDTO(f, isOwner: true)).ToList()
+    }).ToList();
+
+    return Results.Ok(factGroupDtoList);
 })
 .RequireAuthorization();
 
@@ -60,6 +70,7 @@ app.MapGet("/groups/{id}", async (HttpContext context, long id, FactDb db) =>
 
     FactGroup? factGroup = await db.FactGroups
         .Where(g => g.Id == id && g.UserId == userId)
+        .Include(g => g.Facts)
         .FirstOrDefaultAsync();
 
     return factGroup is not null
@@ -68,13 +79,13 @@ app.MapGet("/groups/{id}", async (HttpContext context, long id, FactDb db) =>
 })
 .RequireAuthorization();
 
-app.MapPost("/groups", async (HttpContext context, CreateFactGroupDTO createDto, FactDb db, Snowflake snowflake ) =>
+app.MapPost("/groups", async (HttpContext context, CreateFactGroupDTO createDto, FactDb db, Snowflake snowflake) =>
 {
     string sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
     long userId = long.Parse(sub);
 
     long factGroupId = snowflake.NextID();
-
+        
     FactGroup factGroup = new FactGroup
     {
         Id = factGroupId,
@@ -87,6 +98,39 @@ app.MapPost("/groups", async (HttpContext context, CreateFactGroupDTO createDto,
     await db.SaveChangesAsync();
 
     return TypedResults.Created($"/groups/{factGroupId}", factGroup);
+})
+.RequireAuthorization();
+
+app.MapPost("/facts", async (HttpContext context, CreateFactDTO createDto, FactDb db, Snowflake snowflake ) =>
+{
+    string sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    long userId = long.Parse(sub);
+
+    FactGroup? factGroup = await db.FactGroups
+        .Where(g => g.Id == createDto.FactGroupId && g.UserId == userId)
+        .FirstOrDefaultAsync();
+
+    if (factGroup == null) { 
+        return Results.BadRequest("FactGroup does not exist.");
+    }
+
+    long factId = snowflake.NextID();
+
+    UserFact fact = new UserFact
+    {
+        Id = factId,
+        UserId = userId,
+        Description = createDto.Description,
+        FactGroupId = factGroup.Id,
+        Group = factGroup  
+    };
+
+    factGroup.Facts.Add(fact);
+
+    db.Facts.Add(fact);
+    await db.SaveChangesAsync();
+
+    return TypedResults.Created($"/facts/{fact.Id}", new FactDTO(fact:fact, isOwner:true));
 })
 .RequireAuthorization();
 

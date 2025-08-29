@@ -7,6 +7,7 @@ public class CreateFactDTO
     [StringLength(200, ErrorMessage = "Description cannot exceed 200 characters.")]
     public required string Description { get; set; }
 
+    [Required(ErrorMessage = "FactGroupId is required.")]
     public long FactGroupId { get; set; }   // FK to FactGroup
 }
 
@@ -19,16 +20,16 @@ public class CreateFactGroupDTO
 
 public class FactDTO
 {
-    public required long Id { get; set; }
-    public required long UserId { get; set; }
+    public  long Id { get; set; }
+    public  long UserId { get; set; }
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public required long? FactGroupId { get; set; }
+    public  long? FactGroupId { get; set; }
 
-    public required string Description { get; set; }
+    public  string Description { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
     public FactDTO(UserFact fact, bool isOwner)
     {
         Id = fact.Id;
@@ -39,4 +40,16 @@ public class FactDTO
 
         FactGroupId = isOwner ? fact.FactGroupId : null;
     }
+}
+
+
+public class FactGroupDTO
+{
+    public long Id { get; set; }
+    public long UserId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public List<FactDTO> Facts { get; set; } = [];
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    
 }

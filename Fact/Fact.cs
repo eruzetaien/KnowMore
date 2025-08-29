@@ -3,8 +3,8 @@ public class UserFact
     public required long Id { get; set; }
     public required long UserId { get; set; }
     public required string Description { get; set; }
-    public long FactGroupId { get; set; } 
-    public FactGroup? Group { get; set; }
+    public required long FactGroupId { get; set; } 
+    public required FactGroup? Group { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
