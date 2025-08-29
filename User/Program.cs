@@ -111,10 +111,10 @@ app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake s
     return Results.Ok(new { Token = tokenString });
 });
 
-app.MapGet("/me", async (HttpContext context, UserDb db) =>
+app.MapGet("/me", async (ClaimsPrincipal userClaim, UserDb db) =>
 {
-    string sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-    long userId = long.Parse(sub); 
+    if (!userClaim.TryGetUserId(out long userId))
+        return Results.Unauthorized();
 
     AppUser? user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
     if (user is null)
@@ -124,10 +124,10 @@ app.MapGet("/me", async (HttpContext context, UserDb db) =>
 })
 .RequireAuthorization();
 
-app.MapPut("/update", async (HttpContext context, UpdateUserDTO updateDto, UserDb db) =>
+app.MapPut("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDto, UserDb db) =>
 {
-    string sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-    long userId = long.Parse(sub);
+    if (!userClaim.TryGetUserId(out long userId))
+        return Results.Unauthorized();
 
     var user = await db.Users.FindAsync(userId);
     if (user == null) return Results.NotFound();

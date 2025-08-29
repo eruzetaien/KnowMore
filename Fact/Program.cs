@@ -34,10 +34,9 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.MapGet("/groups", async (HttpContext context, FactDb db) =>
+app.MapGet("/groups", async (ClaimsPrincipal userClaim, FactDb db) =>
 {
-    string? sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-    if (string.IsNullOrEmpty(sub) || !long.TryParse(sub, out var userId))
+    if (!userClaim.TryGetUserId(out long userId))
         return Results.Unauthorized();
 
 
@@ -60,13 +59,10 @@ app.MapGet("/groups", async (HttpContext context, FactDb db) =>
 })
 .RequireAuthorization();
 
-app.MapGet("/groups/{id}", async (HttpContext context, long id, FactDb db) =>
+app.MapGet("/groups/{id}", async (ClaimsPrincipal userClaim, long id, FactDb db) =>
 {
-    string? sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-    if (string.IsNullOrEmpty(sub) || !long.TryParse(sub, out var userId))
-    {
+    if (!userClaim.TryGetUserId(out long userId))
         return Results.Unauthorized();
-    }
 
     FactGroup? factGroup = await db.FactGroups
         .Where(g => g.Id == id && g.UserId == userId)
@@ -79,10 +75,10 @@ app.MapGet("/groups/{id}", async (HttpContext context, long id, FactDb db) =>
 })
 .RequireAuthorization();
 
-app.MapPost("/groups", async (HttpContext context, CreateFactGroupDTO createDto, FactDb db, Snowflake snowflake) =>
+app.MapPost("/groups", async (ClaimsPrincipal userClaim, CreateFactGroupDTO createDto, FactDb db, Snowflake snowflake) =>
 {
-    string sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-    long userId = long.Parse(sub);
+    if (!userClaim.TryGetUserId(out long userId))
+        return Results.Unauthorized();
     
     // Uniqueness name validation
     string normalizedName = createDto.Name.ToLowerInvariant();
@@ -111,10 +107,10 @@ app.MapPost("/groups", async (HttpContext context, CreateFactGroupDTO createDto,
 .RequireAuthorization()
 .AddEndpointFilter<ValidationFilter<CreateFactGroupDTO>>();
 
-app.MapPost("/facts", async (HttpContext context, CreateFactDTO createDto, FactDb db, Snowflake snowflake ) =>
+app.MapPost("/facts", async (ClaimsPrincipal userClaim, CreateFactDTO createDto, FactDb db, Snowflake snowflake ) =>
 {
-    string sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-    long userId = long.Parse(sub);
+    if (!userClaim.TryGetUserId(out long userId))
+        return Results.Unauthorized();
 
     FactGroup? factGroup = await db.FactGroups
         .Where(g => g.Id == createDto.FactGroupId && g.UserId == userId)
@@ -145,10 +141,10 @@ app.MapPost("/facts", async (HttpContext context, CreateFactDTO createDto, FactD
 .RequireAuthorization()
 .AddEndpointFilter<ValidationFilter<CreateFactDTO>>();
 
-app.MapPut("/facts/{id}", async (HttpContext context, long id, UpdateFactDTO updateDto, FactDb db) =>
+app.MapPut("/facts/{id}", async (ClaimsPrincipal userClaim, long id, UpdateFactDTO updateDto, FactDb db) =>
 {
-    string sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-    long userId = long.Parse(sub);
+    if (!userClaim.TryGetUserId(out long userId))
+        return Results.Unauthorized();
 
     UserFact? fact = await db.Facts.FirstOrDefaultAsync(u => u.Id == id && u.UserId == userId);
     if (fact == null)  
