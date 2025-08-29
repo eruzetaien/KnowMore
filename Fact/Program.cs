@@ -121,7 +121,7 @@ app.MapPost("/facts", async (HttpContext context, CreateFactDTO createDto, FactD
         .FirstOrDefaultAsync();
 
     if (factGroup == null) { 
-        return Results.BadRequest("FactGroup does not exist.");
+        return Results.BadRequest(new[] {"FactGroup does not exist."});
     }
 
     long factId = snowflake.NextID();
@@ -142,6 +142,7 @@ app.MapPost("/facts", async (HttpContext context, CreateFactDTO createDto, FactD
 
     return TypedResults.Created($"/facts/{fact.Id}", new FactDTO(fact:fact, isOwner:true));
 })
-.RequireAuthorization();
+.RequireAuthorization()
+.AddEndpointFilter<ValidationFilter<CreateFactDTO>>();
 
 app.Run();

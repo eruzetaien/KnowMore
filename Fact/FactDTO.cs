@@ -5,7 +5,7 @@ public class CreateFactDTO
 {
     [Required(ErrorMessage = "Description is required.")]
     [StringLength(200, ErrorMessage = "Description cannot exceed 200 characters.")]
-    public required string Description { get; set; }
+    public string Description { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "FactGroupId is required.")]
     public long FactGroupId { get; set; }   // FK to FactGroup
@@ -15,7 +15,7 @@ public class CreateFactGroupDTO
 {
     [Required(ErrorMessage = "Name is required.")]
     [StringLength(50, MinimumLength = 4, ErrorMessage = "Name must be between 4 and 50 characters.")]
-    public required string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 }
 
 public class FactDTO
@@ -26,7 +26,7 @@ public class FactDTO
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public  long? FactGroupId { get; set; }
 
-    public  string Description { get; set; }
+    public string Description { get; set; }
 
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
