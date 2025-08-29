@@ -163,7 +163,20 @@ app.MapDelete("/facts/{id}", async (ClaimsPrincipal userClaim, long id, FactDb d
     db.Facts.Remove(fact);
     await db.SaveChangesAsync();
 
-    return Results.NoContent();;
+    return Results.NoContent(); ;
+})
+.RequireAuthorization();
+
+app.MapGet("/facts/{id}", async (ClaimsPrincipal userClaim, long id, FactDb db) =>
+{
+    if (!userClaim.TryGetUserId(out long userId))
+        return Results.Unauthorized();
+
+    UserFact? fact = await db.Facts.FirstOrDefaultAsync(u => u.Id == id && u.UserId == userId);
+    if (fact == null)
+        return Results.NotFound("Fact does not exist.");
+
+    return Results.Ok(new FactDTO(fact));
 })
 .RequireAuthorization();
 
