@@ -139,16 +139,32 @@ app.MapPut("/facts/{id}", async (ClaimsPrincipal userClaim, long id, UpdateFactD
         return Results.Unauthorized();
 
     UserFact? fact = await db.Facts.FirstOrDefaultAsync(u => u.Id == id && u.UserId == userId);
-    if (fact == null)  
-        return Results.BadRequest(new[] {"Fact does not exist."});
+    if (fact == null)
+        return Results.BadRequest(new[] { "Fact does not exist." });
 
     fact.Description = updateDto.Description;
     fact.UpdatedAt = DateTime.UtcNow;
     await db.SaveChangesAsync();
 
-    return TypedResults.Ok(new FactDTO(fact:fact, isOwner:true));
+    return TypedResults.Ok(new FactDTO(fact: fact, isOwner: true));
 })
 .RequireAuthorization()
 .AddEndpointFilter<ValidationFilter<UpdateFactDTO>>();
+
+app.MapDelete("/facts/{id}", async (ClaimsPrincipal userClaim, long id, FactDb db) =>
+{
+    if (!userClaim.TryGetUserId(out long userId))
+        return Results.Unauthorized();
+
+    UserFact? fact = await db.Facts.FirstOrDefaultAsync(u => u.Id == id && u.UserId == userId);
+    if (fact == null)
+        return Results.NotFound("Fact does not exist.");
+
+    db.Facts.Remove(fact);
+    await db.SaveChangesAsync();
+
+    return Results.NoContent();;
+})
+.RequireAuthorization();
 
 app.Run();
