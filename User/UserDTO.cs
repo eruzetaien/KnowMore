@@ -8,6 +8,7 @@ public class UpdateUserDTO
     public string Username { get; set; } = string.Empty;
 
     [StringLength(200, ErrorMessage = "Description cannot exceed 200 characters.")]
+    [RegularExpression(@"^\S(.*\S)?$", ErrorMessage = "Description cannot start or end with whitespace.")]
     public string Description { get; set; } = string.Empty;
 }
 
