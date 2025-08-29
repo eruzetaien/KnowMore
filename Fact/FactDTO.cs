@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-public class  FactInputBaseDto
+public class FactInputBaseDto
 { 
     [Required(ErrorMessage = "Description is required.")]
     [StringLength(200, ErrorMessage = "Description cannot exceed 200 characters.")]
@@ -16,7 +16,7 @@ public class CreateFactDTO :  FactInputBaseDto
 
 public class UpdateFactDTO: FactInputBaseDto {}
 
-public class CreateFactGroupDTO
+public class FactGroupInputBaseDto
 {
     [Required(ErrorMessage = "Name is required.")]
     [StringLength(50, MinimumLength = 4, ErrorMessage = "Name must be between 4 and 50 characters.")]

@@ -67,22 +67,22 @@ app.MapGet("/groups/{id}", async (ClaimsPrincipal userClaim, long id, FactDb db)
 })
 .RequireAuthorization();
 
-app.MapPost("/groups", async (ClaimsPrincipal userClaim, CreateFactGroupDTO createDto, FactDb db, Snowflake snowflake) =>
+app.MapPost("/groups", async (ClaimsPrincipal userClaim, FactGroupInputBaseDto createDto, FactDb db, Snowflake snowflake) =>
 {
     if (!userClaim.TryGetUserId(out long userId))
         return Results.Unauthorized();
-    
+
     // Uniqueness name validation
     string normalizedName = createDto.Name.ToLowerInvariant();
     if (await db.FactGroups.AnyAsync(u =>
         u.NormalizedName == normalizedName &&
-        u.Id != userId))
+        u.UserId != userId))
     {
         return Results.BadRequest(new[] { $"FactGroup with name '{createDto.Name}' already exists." });
     }
 
     long factGroupId = snowflake.NextID();
-        
+
     FactGroup factGroup = new FactGroup
     {
         Id = factGroupId,
@@ -97,7 +97,35 @@ app.MapPost("/groups", async (ClaimsPrincipal userClaim, CreateFactGroupDTO crea
     return Results.Created($"/groups/{factGroupId}", new FactGroupDTO(factGroup));
 })
 .RequireAuthorization()
-.AddEndpointFilter<ValidationFilter<CreateFactGroupDTO>>();
+.AddEndpointFilter<ValidationFilter<FactGroupInputBaseDto>>();
+
+app.MapPut("/groups/{id}", async (ClaimsPrincipal userClaim, long id,  FactGroupInputBaseDto updateDto, FactDb db) =>
+{
+    if (!userClaim.TryGetUserId(out long userId))
+        return Results.Unauthorized();
+
+    // Uniqueness name validation
+    string normalizedName = updateDto.Name.ToLowerInvariant();
+    if (await db.FactGroups.AnyAsync(u =>
+        u.NormalizedName == normalizedName &&
+        u.UserId != userId &&
+        u.Id != id))
+    {
+        return Results.BadRequest(new[] { $"FactGroup with name '{updateDto.Name}' already exists." });
+    }
+
+    FactGroup? factGroup = await db.FactGroups.FirstOrDefaultAsync(u => u.Id == id && u.UserId == userId);
+    if (factGroup == null)
+        return Results.BadRequest(new[] { "FactGroup does not exist." });
+
+    factGroup.Name = updateDto.Name;
+    factGroup.UpdatedAt = DateTime.UtcNow;
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new FactGroupDTO(factGroup));
+})
+.RequireAuthorization()
+.AddEndpointFilter<ValidationFilter<FactGroupInputBaseDto>>();
 
 app.MapPost("/facts", async (ClaimsPrincipal userClaim, CreateFactDTO createDto, FactDb db, Snowflake snowflake ) =>
 {
