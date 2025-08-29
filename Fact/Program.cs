@@ -83,6 +83,15 @@ app.MapPost("/groups", async (HttpContext context, CreateFactGroupDTO createDto,
 {
     string sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
     long userId = long.Parse(sub);
+    
+    // Uniqueness name validation
+    string normalizedName = createDto.Name.ToLowerInvariant();
+    if (await db.FactGroups.AnyAsync(u =>
+        u.NormalizedName == normalizedName &&
+        u.Id != userId))
+    {
+        return Results.BadRequest(new[] { $"FactGroup with name '{createDto.Name}' already exists." });
+    }
 
     long factGroupId = snowflake.NextID();
         
@@ -91,15 +100,16 @@ app.MapPost("/groups", async (HttpContext context, CreateFactGroupDTO createDto,
         Id = factGroupId,
         UserId = userId,
         Name = createDto.Name,
-        NormalizedName = createDto.Name.ToLowerInvariant()
+        NormalizedName = normalizedName
     };
 
     db.FactGroups.Add(factGroup);
     await db.SaveChangesAsync();
 
-    return TypedResults.Created($"/groups/{factGroupId}", factGroup);
+    return Results.Created($"/groups/{factGroupId}", factGroup);
 })
-.RequireAuthorization();
+.RequireAuthorization()
+.AddEndpointFilter<ValidationFilter<CreateFactGroupDTO>>();
 
 app.MapPost("/facts", async (HttpContext context, CreateFactDTO createDto, FactDb db, Snowflake snowflake ) =>
 {
