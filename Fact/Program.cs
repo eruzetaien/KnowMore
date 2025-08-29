@@ -99,7 +99,7 @@ app.MapPost("/groups", async (ClaimsPrincipal userClaim, FactGroupInputBaseDto c
 .RequireAuthorization()
 .AddEndpointFilter<ValidationFilter<FactGroupInputBaseDto>>();
 
-app.MapPut("/groups/{id}", async (ClaimsPrincipal userClaim, long id,  FactGroupInputBaseDto updateDto, FactDb db) =>
+app.MapPut("/groups/{id}", async (ClaimsPrincipal userClaim, long id, FactGroupInputBaseDto updateDto, FactDb db) =>
 {
     if (!userClaim.TryGetUserId(out long userId))
         return Results.Unauthorized();
@@ -116,7 +116,7 @@ app.MapPut("/groups/{id}", async (ClaimsPrincipal userClaim, long id,  FactGroup
 
     FactGroup? factGroup = await db.FactGroups.FirstOrDefaultAsync(u => u.Id == id && u.UserId == userId);
     if (factGroup == null)
-        return Results.BadRequest(new[] { "FactGroup does not exist." });
+        return Results.NotFound("FactGroup does not exist.");
 
     factGroup.Name = updateDto.Name;
     factGroup.UpdatedAt = DateTime.UtcNow;
@@ -126,6 +126,23 @@ app.MapPut("/groups/{id}", async (ClaimsPrincipal userClaim, long id,  FactGroup
 })
 .RequireAuthorization()
 .AddEndpointFilter<ValidationFilter<FactGroupInputBaseDto>>();
+
+
+app.MapDelete("/groups/{id}", async (ClaimsPrincipal userClaim, long id, FactDb db) =>
+{
+    if (!userClaim.TryGetUserId(out long userId))
+        return Results.Unauthorized();
+
+    FactGroup? factGroup = await db.FactGroups.FirstOrDefaultAsync(u => u.Id == id && u.UserId == userId);
+    if (factGroup == null)
+        return Results.NotFound("FactGroup does not exist.");
+
+    db.FactGroups.Remove(factGroup);
+    await db.SaveChangesAsync();
+
+    return Results.NoContent();
+})
+.RequireAuthorization();
 
 app.MapPost("/facts", async (ClaimsPrincipal userClaim, CreateFactDTO createDto, FactDb db, Snowflake snowflake ) =>
 {
