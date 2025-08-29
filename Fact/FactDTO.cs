@@ -12,6 +12,14 @@ public class CreateFactDTO
     public long FactGroupId { get; set; }   // FK to FactGroup
 }
 
+public class UpdateFactDTO
+{
+    [Required(ErrorMessage = "Description is required.")]
+    [StringLength(200, ErrorMessage = "Description cannot exceed 200 characters.")]
+    [RegularExpression(@"^\S(.*\S)?$", ErrorMessage = "Description cannot start or end with whitespace.")]
+    public string Description { get; set; } = string.Empty;
+}
+
 public class CreateFactGroupDTO
 {
     [Required(ErrorMessage = "Name is required.")]

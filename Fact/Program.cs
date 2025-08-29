@@ -145,4 +145,22 @@ app.MapPost("/facts", async (HttpContext context, CreateFactDTO createDto, FactD
 .RequireAuthorization()
 .AddEndpointFilter<ValidationFilter<CreateFactDTO>>();
 
+app.MapPut("/facts/{id}", async (HttpContext context, long id, UpdateFactDTO updateDto, FactDb db) =>
+{
+    string sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    long userId = long.Parse(sub);
+
+    UserFact? fact = await db.Facts.FirstOrDefaultAsync(u => u.Id == id && u.UserId == userId);
+    if (fact == null)  
+        return Results.BadRequest(new[] {"Fact does not exist."});
+
+    fact.Description = updateDto.Description;
+    fact.UpdatedAt = DateTime.UtcNow;
+    await db.SaveChangesAsync();
+
+    return TypedResults.Ok(new FactDTO(fact:fact, isOwner:true));
+})
+.RequireAuthorization()
+.AddEndpointFilter<ValidationFilter<UpdateFactDTO>>();
+
 app.Run();
