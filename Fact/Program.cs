@@ -45,15 +45,7 @@ app.MapGet("/groups", async (ClaimsPrincipal userClaim, FactDb db) =>
         .Where(g => g.UserId == userId)
         .ToListAsync();
 
-    var factGroupDtoList = factGroups.Select(g => new FactGroupDTO
-    {
-        Id = g.Id,
-        UserId = g.UserId,
-        Name = g.Name,
-        CreatedAt = g.CreatedAt,
-        UpdatedAt = g.UpdatedAt,
-        Facts = g.Facts.Select(f => new FactDTO(f, isOwner: true)).ToList()
-    }).ToList();
+    List<FactGroupDTO> factGroupDtoList = factGroups.Select(g => new FactGroupDTO(g)).ToList();
 
     return Results.Ok(factGroupDtoList);
 })
@@ -70,7 +62,7 @@ app.MapGet("/groups/{id}", async (ClaimsPrincipal userClaim, long id, FactDb db)
         .FirstOrDefaultAsync();
 
     return factGroup is not null
-        ? Results.Ok(factGroup)
+        ? Results.Ok(new FactGroupDTO(factGroup))
         : Results.NotFound();
 })
 .RequireAuthorization();
@@ -102,7 +94,7 @@ app.MapPost("/groups", async (ClaimsPrincipal userClaim, CreateFactGroupDTO crea
     db.FactGroups.Add(factGroup);
     await db.SaveChangesAsync();
 
-    return Results.Created($"/groups/{factGroupId}", factGroup);
+    return Results.Created($"/groups/{factGroupId}", new FactGroupDTO(factGroup));
 })
 .RequireAuthorization()
 .AddEndpointFilter<ValidationFilter<CreateFactGroupDTO>>();

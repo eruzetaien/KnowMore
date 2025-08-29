@@ -36,7 +36,7 @@ public class FactDTO
 
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-    public FactDTO(UserFact fact, bool isOwner)
+    public FactDTO(UserFact fact, bool isOwner=true)
     {
         Id = fact.Id;
         UserId = fact.UserId;
@@ -57,5 +57,15 @@ public class FactGroupDTO
     public List<FactDTO> Facts { get; set; } = [];
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+
+    public FactGroupDTO(FactGroup factGroup)
+    {
+        Id = factGroup.Id;
+        UserId = factGroup.UserId;
+        Name = factGroup.Name;
+        Facts = factGroup.Facts.Select(f => new FactDTO(f)).ToList();
+        CreatedAt = factGroup.CreatedAt;
+        UpdatedAt = factGroup.UpdatedAt;
+    }
     
 }
