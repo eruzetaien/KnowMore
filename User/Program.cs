@@ -26,7 +26,7 @@ builder.Services
 
 var app = builder.Build();
 
-app.UseCors();
+app.UseCors("FrontendPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -108,7 +108,16 @@ app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake s
     );
 
     string tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-    return Results.Ok(new { Token = tokenString });
+
+    context.Response.Cookies.Append("jwt", tokenString, new CookieOptions
+    {
+        HttpOnly = true,
+        Secure = false,
+        SameSite = SameSiteMode.Strict,
+        Expires = DateTime.UtcNow.AddHours(8)
+    });
+
+    return Results.Redirect("http://localhost:5173");
 });
 
 app.MapGet("/me", async (ClaimsPrincipal userClaim, UserDb db) =>

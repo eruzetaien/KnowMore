@@ -52,6 +52,18 @@ public static class ServiceCollectionExtensions
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(jwtKeyBytes)
                 };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        if (context.Request.Cookies.ContainsKey("jwt"))
+                        {
+                            context.Token = context.Request.Cookies["jwt"];
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
         services.AddAuthorization(options =>
@@ -67,14 +79,16 @@ public static class ServiceCollectionExtensions
     {
         services.AddCors(options =>
         {
-            options.AddDefaultPolicy(policy =>
-                policy.AllowAnyOrigin()
-                      .AllowAnyMethod()
-                      .AllowAnyHeader());
+            options.AddPolicy("FrontendPolicy", policy =>
+                policy.WithOrigins("http://localhost:5173")
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials());
         });
 
         return services;
     }
+
 
 
     public static IServiceCollection AddSwagger(

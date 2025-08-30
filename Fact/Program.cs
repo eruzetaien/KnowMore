@@ -14,7 +14,7 @@ builder.Services
 
 var app = builder.Build();
 
-app.UseCors();
+app.UseCors("FrontendPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 
