@@ -8,3 +8,9 @@ export const createRoom = async (
 
   return apiRequest<RoomResponse>(endpoint, "POST", requestBody);
 };
+
+export const fetchAllRooms = async (): Promise<RoomResponse[]> => {
+  const endpoint = `${import.meta.env.VITE_GAME_BASE_URL}/rooms`;
+
+  return apiRequest<RoomResponse[]>(endpoint, "GET");
+};

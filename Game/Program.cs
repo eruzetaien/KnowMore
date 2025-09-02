@@ -40,7 +40,7 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
         JoinCode = joinCode,
         Name = createDto.Name,
         RoomMaster = userId,
-        SecondPlayer = 0
+        SecondPlayer = null
     };
     string roomJson = JsonSerializer.Serialize(room);
 

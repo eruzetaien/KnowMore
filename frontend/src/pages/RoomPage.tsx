@@ -1,25 +1,23 @@
-import {useParams} from "react-router-dom";
-import type { RoomResponse } from "../types/room";
+import { useParams } from "react-router-dom";
 import { useEffect } from "react";
-import { joinRoom } from "../signalr/gameHub";
+import { useGameHub } from "../context/GameHubContext";
 
 function RoomPage() {
   const { roomCode } = useParams();
-  const saved = localStorage.getItem("currentRoom");
-  const room = saved ? (JSON.parse(saved) as RoomResponse) : undefined;
+  const { room, connected, joinRoom } = useGameHub();
 
   useEffect(() => {
     if (roomCode) {
-      joinRoom(roomCode)
-        .then(() => console.log(`Joined room ${roomCode}`))
-        .catch((err) => console.error("Failed to join room:", err));
+      joinRoom(roomCode);
     }
-  }, [roomCode]);
+  }, [roomCode, connected, joinRoom]);
 
   return (
     <div>
       <h1>Room: {room?.name ?? "Unknown"}</h1>
-      <p>Code: {roomCode}</p>
+      <p>Code: {room?.joinCode ?? roomCode}</p>
+      <p>Room Master: {room?.roomMaster ?? "-"}</p>
+      <p>Second Player: {room?.secondPlayer ?? "-"}</p>
     </div>
   );
 }

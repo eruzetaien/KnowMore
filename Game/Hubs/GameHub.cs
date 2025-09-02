@@ -44,11 +44,11 @@ public class GameHub : Hub
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
             await Clients.Group(roomCode)
-                .SendAsync("ReceiveRoomUpdate", $"Room master {userId} joined {roomCode}.");
+                .SendAsync("ReceiveRoomUpdate", room);
             return;
         }
 
-        if (room.SecondPlayer is null)
+        if (room.SecondPlayer is null || room.SecondPlayer == 0 )
         {
             room.SecondPlayer = userId;
 
@@ -59,7 +59,7 @@ public class GameHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
 
         await Clients.Group(roomCode)
-            .SendAsync("ReceiveRoomUpdate", $"User {userId} has joined {roomCode}.");
+            .SendAsync("ReceiveRoomUpdate", room);
     }
 
     public async Task LeaveRoom(string roomCode)
