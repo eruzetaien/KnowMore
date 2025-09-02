@@ -28,8 +28,9 @@ public class GameHub : Hub
             throw new HubException("Unauthorized: missing claim");
         long userId = long.Parse(sub);
 
-        var db = _redis.GetDatabase();
-        string? roomJson = await db.StringGetAsync(roomCode);
+        IDatabase db = _redis.GetDatabase();
+        string roomKey = $"room:{roomCode}";
+        string? roomJson = await db.StringGetAsync(roomKey);
 
         if (roomJson == null)
             throw new HubException("Room not found");
