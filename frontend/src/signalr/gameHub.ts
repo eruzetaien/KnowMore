@@ -3,10 +3,13 @@ import * as signalR from "@microsoft/signalr";
 let connection: signalR.HubConnection | null = null;
 
 export const startGameHub = async () => {
-  if (connection) return connection;
+  if (connection && connection.state === signalR.HubConnectionState.Connected) 
+    return connection; 
+  
+  const hubUrl = `${import.meta.env.VITE_GAME_BASE_URL}/gamehub`;
 
   connection = new signalR.HubConnectionBuilder()
-    .withUrl("/gamehub")
+    .withUrl(hubUrl)
     .withAutomaticReconnect()
     .build();
 
@@ -28,6 +31,7 @@ export const stopGameHub = async () => {
 };
 
 export const joinRoom = async (roomCode: string) => {
-  if (!connection) throw new Error("Not connected");
-  await connection.invoke("JoinRoom", roomCode);
+  const conn = await startGameHub(); // ensure connection is alive
+  await conn.invoke("JoinRoom", roomCode);
 };
+

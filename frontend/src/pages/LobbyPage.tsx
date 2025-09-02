@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateRoom } from "../hooks/useCreateRoom";
+import { startGameHub } from "../signalr/gameHub";
 
 function LobbyPage() {
   const navigate = useNavigate();
@@ -17,7 +18,9 @@ function LobbyPage() {
   useEffect(() => {
     if (data) {
       localStorage.setItem("currentRoom", JSON.stringify(data));
-      navigate(`/room/${data.joinCode}`);
+      startGameHub().then(() => {
+        navigate(`/room/${data.joinCode}`);
+      });
     }
   }, [data, navigate]);
 

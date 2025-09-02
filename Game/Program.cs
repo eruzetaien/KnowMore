@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using DotNetEnv;
 using StackExchange.Redis;
 
@@ -22,6 +23,9 @@ app.UseCors("FrontendPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHub<GameHub>("/gamehub")
+   .RequireAuthorization();
+
 app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto, IConnectionMultiplexer redis) =>
 {
     if (!userClaim.TryGetUserId(out long userId))
@@ -29,17 +33,19 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
 
     var db = redis.GetDatabase();
 
-    var joinCode = Guid.NewGuid().ToString("N")[..6].ToUpper();
+    string joinCode = Guid.NewGuid().ToString("N")[..6].ToUpper();
 
-    var key = joinCode;
-    await db.HashSetAsync(key, new HashEntry[]
-    {   
-        new("joinCode", joinCode),
-        new("roomName", createDto.Name),
-        new("roomMaster", userId),
-        new("secondPlayer", ""), 
-    });
+    string key = joinCode;
+    Room room = new()
+    {
+        JoinCode = joinCode,
+        Name = createDto.Name,
+        RoomMaster = userId,
+        SecondPlayer = 0
+    };
 
+    string roomJson = JsonSerializer.Serialize(room);
+    await db.StringSetAsync(joinCode, roomJson);
     await db.KeyExpireAsync(key, TimeSpan.FromMinutes(10));
 
     return Results.Ok(new
