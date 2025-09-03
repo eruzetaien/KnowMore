@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useGameHub } from "../context/GameHubContext";
 
@@ -19,6 +19,9 @@ function RoomPage() {
     setReady(newState);
     setReadyState(room.joinCode, newState); // if GameHub provides ready state update
   };
+
+  const navigate = useNavigate();
+  if (room.hasGameStarted) navigate(`/game/${roomCode}`);
 
   if (isLoading) return <p>Connecting to game hub...</p>;
 
