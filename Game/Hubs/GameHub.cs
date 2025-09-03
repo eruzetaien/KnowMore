@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
@@ -28,17 +29,7 @@ public class GameHub : Hub
             throw new HubException("Unauthorized: missing claim");
         long userId = long.Parse(sub);
 
-        IDatabase db = _redis.GetDatabase();
-        string roomKey = $"room:{roomCode}";
-        string? roomJson = await db.StringGetAsync(roomKey);
-
-        if (roomJson == null)
-            throw new HubException("Room not found");
-
-        Room? room = JsonSerializer.Deserialize<Room>(roomJson!);
-
-        if (room is null)
-            throw new HubException("Invalid room data");
+        Room room = await GetRoom(roomCode);
 
         if (room.RoomMaster == userId)
         {
@@ -50,6 +41,7 @@ public class GameHub : Hub
 
         if (room.SecondPlayer is null || room.SecondPlayer == 0 )
         {
+            IDatabase db = _redis.GetDatabase();
             room.SecondPlayer = userId;
 
             string updatedJson = JsonSerializer.Serialize(room);
@@ -61,6 +53,22 @@ public class GameHub : Hub
         await Clients.Group(roomCode)
             .SendAsync("ReceiveRoomUpdate", room);
     }
+
+    private async Task<Room> GetRoom(string roomCode) {
+        IDatabase db = _redis.GetDatabase();
+        string roomKey = $"room:{roomCode}";
+        RedisValue roomValue = await db.StringGetAsync(roomKey);
+
+        if (!roomValue.HasValue)
+            throw new HubException("Room not found");
+
+        try {
+            return JsonSerializer.Deserialize<Room>(roomValue!)!;
+        } catch (JsonException) {
+            throw new HubException("Room data corrupted");
+        }
+    }
+
 
     public async Task LeaveRoom(string roomCode)
     {
