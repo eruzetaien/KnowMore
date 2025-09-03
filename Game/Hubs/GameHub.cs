@@ -29,7 +29,8 @@ public class GameHub : Hub
             throw new HubException("Unauthorized: missing claim");
         long userId = long.Parse(sub);
 
-        Room room = await GetRoom(roomCode);
+        string roomKey = $"room:{roomCode}";
+        Room room = await GetRoom(roomKey);
 
         if (room.RoomMaster == userId)
         {
@@ -41,11 +42,8 @@ public class GameHub : Hub
 
         if (room.SecondPlayer is null || room.SecondPlayer == 0 )
         {
-            IDatabase db = _redis.GetDatabase();
             room.SecondPlayer = userId;
-
-            string updatedJson = JsonSerializer.Serialize(room);
-            await db.StringSetAsync(roomCode, updatedJson);
+            await UpdateRoom(roomKey, room);
         }
 
         await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
@@ -53,20 +51,56 @@ public class GameHub : Hub
         await Clients.Group(roomCode)
             .SendAsync("ReceiveRoomUpdate", room);
     }
+    
+    
+    public async Task SetPlayerReadyStatus(string roomCode, bool isReady)
+    {
+        string? sub = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (sub is null)
+            throw new HubException("Unauthorized: missing claim");
+        long userId = long.Parse(sub);
 
-    private async Task<Room> GetRoom(string roomCode) {
-        IDatabase db = _redis.GetDatabase();
         string roomKey = $"room:{roomCode}";
+        Room room = await GetRoom(roomKey);
+
+        if (userId != room.RoomMaster && userId != room.SecondPlayer) 
+            throw new HubException("Player is invalid");
+
+        if (room.RoomMaster == userId)
+            room.IsPlayer1Ready = isReady;
+        else
+            room.IsPlayer2Ready = isReady;
+        bool isAllPlayerReady = room.IsPlayer1Ready && room.IsPlayer2Ready;
+        room.HasGameStarted = isAllPlayerReady;
+        await UpdateRoom(roomKey, room);
+
+        await Clients.Group(roomCode)
+            .SendAsync("ReceiveRoomUpdate", room);
+    }
+
+    private async Task<Room> GetRoom(string roomKey)
+    {
+        IDatabase db = _redis.GetDatabase();
         RedisValue roomValue = await db.StringGetAsync(roomKey);
 
         if (!roomValue.HasValue)
             throw new HubException("Room not found");
 
-        try {
+        try
+        {
             return JsonSerializer.Deserialize<Room>(roomValue!)!;
-        } catch (JsonException) {
+        }
+        catch (JsonException)
+        {
             throw new HubException("Room data corrupted");
         }
+    }
+
+    private async Task UpdateRoom(string roomKey, Room room)
+    {
+        IDatabase db = _redis.GetDatabase();
+        string updatedJson = JsonSerializer.Serialize(room);
+        await db.StringSetAsync(roomKey, updatedJson);
     }
 
 

@@ -40,7 +40,10 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
         JoinCode = joinCode,
         Name = createDto.Name,
         RoomMaster = userId,
-        SecondPlayer = null
+        SecondPlayer = null,
+        IsPlayer1Ready = false,
+        IsPlayer2Ready = false,
+        HasGameStarted = false
     };
     string roomJson = JsonSerializer.Serialize(room);
 
@@ -70,16 +73,25 @@ app.MapGet("/rooms", async (ClaimsPrincipal userClaim, IConnectionMultiplexer re
     RedisKey[] redisKeys = validKeys.Select(v => (RedisKey)v.ToString()).ToArray();
     RedisValue[] roomJsons = await db.StringGetAsync(redisKeys);
 
-    List<Room> rooms = new ();
+    List<Room> rooms = [];
+    List<RedisValue> hasStartedRoomKeys = [];
     foreach (RedisValue roomJson in roomJsons)
     {
         if (!roomJson.IsNullOrEmpty)
         {
             Room? room = JsonSerializer.Deserialize<Room>(roomJson!);
-            if (room is not null)
+            if (room is null)
+                continue;
+
+            if (room.HasGameStarted)
+                hasStartedRoomKeys.Add(roomJson);
+            else
                 rooms.Add(room);
         }
     }
+
+    if (hasStartedRoomKeys.Count > 0)
+        await db.SortedSetRemoveAsync("rooms:index", hasStartedRoomKeys.ToArray());
 
     return Results.Ok(rooms);
 })
