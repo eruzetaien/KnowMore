@@ -7,3 +7,9 @@ public class CreateRoomDto
     [RegularExpression(@"^\S(.*\S)?$", ErrorMessage = "Name cannot start or end with whitespace.")]
     public string Name { get; set; } = string.Empty;
 }
+
+public enum Emoticon
+{
+    None = 0,
+    Shocked = 1
+}

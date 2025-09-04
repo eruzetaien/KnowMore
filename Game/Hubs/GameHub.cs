@@ -27,30 +27,38 @@ public class GameHub : Hub
         string? sub = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (sub is null)
             throw new HubException("Unauthorized: missing claim");
+
         long userId = long.Parse(sub);
 
         string roomKey = $"room:{roomCode}";
         Room room = await GetRoom(roomKey);
 
+        string? playerRole = null;
+
         if (room.RoomMaster == userId)
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
-            await Clients.Group(roomCode)
-                .SendAsync("ReceiveRoomUpdate", room);
-            return;
+            playerRole = "Player1";
         }
-
-        if (room.SecondPlayer is null || room.SecondPlayer == 0 )
+        else if (room.SecondPlayer == userId)
+        {
+            playerRole = "Player2";
+        }
+        else if (room.SecondPlayer is null or 0)
         {
             room.SecondPlayer = userId;
+            playerRole = "Player2";
             await UpdateRoom(roomKey, room);
         }
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
+        if (playerRole is null)
+            throw new HubException("Room is full or you are not allowed to join");
 
-        await Clients.Group(roomCode)
-            .SendAsync("ReceiveRoomUpdate", room);
+        Context.Items["PlayerRole"] = playerRole;
+        await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
+        await Clients.Caller.SendAsync("PlayerJoined", playerRole);
+        await Clients.Group(roomCode).SendAsync("ReceiveRoomUpdate", room);
     }
+
     
     
     public async Task SetPlayerReadyStatus(string roomCode, bool isReady)
@@ -76,6 +84,18 @@ public class GameHub : Hub
 
         await Clients.Group(roomCode)
             .SendAsync("ReceiveRoomUpdate", room);
+    }
+
+    public async Task SendEmoticon(string roomCode, Emoticon emoticon)
+    {
+        if (!Context.Items.TryGetValue("PlayerRole", out var roleObj) || roleObj is not string role)
+            throw new HubException("Role not set");
+
+        await Clients.Group(roomCode).SendAsync("ReceiveEmoticon", new {
+            Sender = role,
+            Emoticon = emoticon
+        });
+        
     }
 
     private async Task<Room> GetRoom(string roomKey)
