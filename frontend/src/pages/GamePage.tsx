@@ -1,5 +1,6 @@
-import { Emoticon, useGameHub } from "../context/GameHubContext";
+import { useGameHub } from "../context/GameHubContext";
 import emot1 from "../assets/emoticons/emot1.png"; // import image
+import { Emoticon } from "../types/game";
 
 function GamePage() {
   const { room, isLoading, sendEmoticon, emoticonPlayer1, emoticonPlayer2 } = useGameHub();

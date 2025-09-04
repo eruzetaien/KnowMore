@@ -9,10 +9,12 @@ public class GameHub : Hub
 {
 
     private readonly IConnectionMultiplexer _redis;
+    private readonly ILogger _logger;
 
-    public GameHub(IConnectionMultiplexer redis)
+    public GameHub(IConnectionMultiplexer redis, ILogger<GameHub> logger)
     {
         _redis = redis;
+        _logger = logger;
     }
 
     public override async Task OnConnectedAsync()
@@ -22,7 +24,7 @@ public class GameHub : Hub
         await base.OnConnectedAsync();
     }
 
-    public async Task JoinRoom(string roomCode)
+    public async Task JoinRoom(JoinRoomRequest request)
     {
         string? sub = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (sub is null)
@@ -30,7 +32,7 @@ public class GameHub : Hub
 
         long userId = long.Parse(sub);
 
-        string roomKey = $"room:{roomCode}";
+        string roomKey = $"room:{request.RoomCode}";
         Room room = await GetRoom(roomKey);
 
         string? playerRole = null;
@@ -54,48 +56,46 @@ public class GameHub : Hub
             throw new HubException("Room is full or you are not allowed to join");
 
         Context.Items["PlayerRole"] = playerRole;
-        await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
-        await Clients.Caller.SendAsync("PlayerJoined", playerRole);
-        await Clients.Group(roomCode).SendAsync("ReceiveRoomUpdate", room);
+        await Groups.AddToGroupAsync(Context.ConnectionId, request.RoomCode);
+        await Clients.Caller.SendAsync("PlayerJoined", new {Role = playerRole});
+        await Clients.Group(request.RoomCode).SendAsync("ReceiveRoomUpdate", room);
     }
-
     
-    
-    public async Task SetPlayerReadyStatus(string roomCode, bool isReady)
+    public async Task SetPlayerReadyState(SetPlayerReadyStateRequest request)
     {
         string? sub = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (sub is null)
             throw new HubException("Unauthorized: missing claim");
         long userId = long.Parse(sub);
 
-        string roomKey = $"room:{roomCode}";
+        string roomKey = $"room:{request.RoomCode}";
         Room room = await GetRoom(roomKey);
 
         if (userId != room.RoomMaster && userId != room.SecondPlayer) 
             throw new HubException("Player is invalid");
 
         if (room.RoomMaster == userId)
-            room.IsPlayer1Ready = isReady;
+            room.IsPlayer1Ready = request.IsReady;
         else
-            room.IsPlayer2Ready = isReady;
+            room.IsPlayer2Ready = request.IsReady;
         bool isAllPlayerReady = room.IsPlayer1Ready && room.IsPlayer2Ready;
         room.HasGameStarted = isAllPlayerReady;
         await UpdateRoom(roomKey, room);
 
-        await Clients.Group(roomCode)
+        _logger.LogInformation("New ready state : {state}", request.IsReady);
+        _logger.LogInformation("Updated room: {room}", JsonSerializer.Serialize(room));
+
+        await Clients.Group(request.RoomCode)
             .SendAsync("ReceiveRoomUpdate", room);
     }
 
-    public async Task SendEmoticon(string roomCode, Emoticon emoticon)
+    public async Task SendEmoticon(SendEmoticonRequest request)
     {
         if (!Context.Items.TryGetValue("PlayerRole", out var roleObj) || roleObj is not string role)
             throw new HubException("Role not set");
 
-        await Clients.Group(roomCode).SendAsync("ReceiveEmoticon", new {
-            Sender = role,
-            Emoticon = emoticon
-        });
-        
+        await Clients.Group(request.RoomCode).SendAsync("ReceiveEmoticon",
+            new { Sender = role, Emoticon = request.Emoticon });   
     }
 
     private async Task<Room> GetRoom(string roomKey)

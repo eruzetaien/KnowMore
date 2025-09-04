@@ -11,3 +11,12 @@ export interface RoomResponse {
 export interface CreateRoomRequest {
   name: string;
 }
+
+export interface JoinRoomResponse {
+  role: string;
+}
+
+export interface ReceivePlayerReadyStateResponse {
+  sender: string;
+  isReady: boolean; 
+}

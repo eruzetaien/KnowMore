@@ -13,3 +13,20 @@ public enum Emoticon
     None = 0,
     Shocked = 1
 }
+
+public class JoinRoomRequest()
+{
+    public string RoomCode { get; set; } = string.Empty;
+}
+
+public class SetPlayerReadyStateRequest()
+{
+    public string RoomCode { get; set; } = string.Empty;
+    public bool IsReady { get; set; }
+}
+
+public class SendEmoticonRequest()
+{
+    public string RoomCode { get; set; } = string.Empty;
+    public Emoticon Emoticon { get; set; }
+}

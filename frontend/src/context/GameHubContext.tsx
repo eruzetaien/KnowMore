@@ -1,19 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import * as signalR from "@microsoft/signalr";
-import type { RoomResponse } from "../types/room";
-import type { EmoticonResponse } from "../types/game";
-
-
-export const Emoticon = {
-  None: 0,
-  Shocked: 1,
-} as const;
-export type Emoticon = (typeof Emoticon)[keyof typeof Emoticon];
+import type { JoinRoomResponse, RoomResponse } from "../types/room";
+import type { SendEmoticonResponse } from "../types/game";
+import { Emoticon} from "../types/game";
 
 type GameHubData = {
   connected: boolean;
   room: RoomResponse;
-  isLoading: boolean;       // added loading state
+  isLoading: boolean;       
   emoticonPlayer1: Emoticon;
   emoticonPlayer2: Emoticon;
 };
@@ -57,7 +51,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setData(prev => ({ ...prev, room }));
     });
 
-    connection.on("ReceiveEmoticon", (emotionResponse: EmoticonResponse) => {
+    connection.on("ReceiveEmoticon", (emotionResponse: SendEmoticonResponse) => {
       if (emotionResponse.sender == "Player1"){
         setData(prev => ({ ...prev, emoticonPlayer1:emotionResponse.emoticon }));
         
@@ -73,8 +67,8 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     });
 
-    connection.on("PlayerJoined", (player: string) => {
-      localStorage.setItem("player", player); // P1ayer1 or Player2
+    connection.on("PlayerJoined", (respose: JoinRoomResponse) => {
+      localStorage.setItem("player", respose.role); // P1ayer1 or Player2
     });
 
     await connection.start();
@@ -109,21 +103,21 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const joinRoom = useCallback(
     async (roomCode: string) => {
-      await invokeWithConnection("JoinRoom", roomCode);
+      await invokeWithConnection("JoinRoom", {roomCode: roomCode});
     },
     [invokeWithConnection]
   );
 
   const setReadyState = useCallback(
     async (roomCode: string, isReady: boolean) => {
-      await invokeWithConnection("SetPlayerReadyStatus", roomCode, isReady);
+      await invokeWithConnection("SetPlayerReadyState", {roomCode, isReady} );
     },
     [invokeWithConnection]
   );
 
   const sendEmoticon = useCallback(
     async (roomCode: string, emoticon: Emoticon) => {
-      await invokeWithConnection("SendEmoticon", roomCode, emoticon);
+      await invokeWithConnection("SendEmoticon", {roomCode: roomCode, emoticon:emoticon});
     },
     [invokeWithConnection]
   );
