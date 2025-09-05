@@ -131,11 +131,15 @@ public class GameHub : Hub
         {
             throw new HubException("Role not set");
         }
+        await UpdateEntity<GameData>(gameKey, game);
+        
+        await Clients.Group(request.RoomCode).SendAsync("ReceiveOptions",
+                new { IsPlayer1Ready= game.IsPlayer1Ready, IsPlayer2Ready= game.IsPlayer2Ready });
 
         if (game.IsPlayer1Ready && game.IsPlayer2Ready)
-        { 
+        {
             await Clients.Group(request.RoomCode).SendAsync("StartPlayingPhase",
-                new {});   
+                new { });
         }
     }
 

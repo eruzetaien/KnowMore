@@ -16,6 +16,11 @@ export interface SendEmoticonResponse {
   emoticon: Emoticon;
 }
 
+export interface SendOptionsResponse {
+  isPlayer1Ready: boolean;
+  isPlayer2Ready: boolean;
+}
+
 export interface PlayerOption {
   idx : number,
   description: string
@@ -32,11 +37,12 @@ export interface EmoticonData {
 }
 
 export interface PreparationPhaseData {
-  player1Options: PlayerOption[];
-  player2Options: PlayerOption[];
   isPlayer1Ready: boolean;
   isPlayer2Ready: boolean;
 }
 
-export interface PlayingPhaseData {}
+export interface PlayingPhaseData {
+  player1Options: PlayerOption[];
+  player2Options: PlayerOption[];
+}
 export interface ResultPhaseData {}
