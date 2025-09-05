@@ -1,4 +1,4 @@
-import type { CreateRoomRequest, RoomResponse } from "../types/room";
+import type { CreateRoomRequest, RoomResponse } from "../types/roomType";
 import { apiRequest } from "./apiRequest";
 
 export const createRoom = async (

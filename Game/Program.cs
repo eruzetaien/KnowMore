@@ -33,7 +33,7 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
 
     IDatabase db = redis.GetDatabase();
 
-    string joinCode = Guid.NewGuid().ToString("N")[..6].ToUpper();
+    string joinCode = Util.GetRandomCode();
     string roomKey = $"room:{joinCode}";
     Room room = new()
     {

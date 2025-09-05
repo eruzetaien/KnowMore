@@ -14,6 +14,13 @@ public enum Emoticon
     Shocked = 1
 }
 
+public enum GamePhase
+{
+    Preparation = 0,
+    Playing = 1,
+    Result = 1,
+}
+
 public class JoinRoomRequest()
 {
     public string RoomCode { get; set; } = string.Empty;
@@ -29,4 +36,12 @@ public class SendEmoticonRequest()
 {
     public string RoomCode { get; set; } = string.Empty;
     public Emoticon Emoticon { get; set; }
+}
+
+public class SendOptionsRequest()
+{
+    public string RoomCode { get; set; } = string.Empty;
+    public string Lie { get; set; } = string.Empty; 
+    public long FactId1 { get; set;} 
+    public long FactId2 { get; set;} 
 }

@@ -1,15 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import * as signalR from "@microsoft/signalr";
-import type { JoinRoomResponse, RoomResponse } from "../types/room";
-import type { SendEmoticonResponse } from "../types/game";
-import { Emoticon} from "../types/game";
+import type { JoinRoomResponse, RoomResponse } from "../types/roomType";
+import type { EmoticonData, GameData, SendEmoticonResponse } from "../types/gameType";
+import { Emoticon, GamePhase} from "../types/gameType";
 
 type GameHubData = {
   connected: boolean;
   room: RoomResponse;
-  isLoading: boolean;       
-  emoticonPlayer1: Emoticon;
-  emoticonPlayer2: Emoticon;
+  isLoading: boolean;
+  emoticon: EmoticonData;
+  game: GameData;
 };
 
 type GameHubContextType = GameHubData & {
@@ -18,14 +18,15 @@ type GameHubContextType = GameHubData & {
   joinRoom: (roomCode: string) => Promise<void>;
   setReadyState: (roomCode: string, isReady: boolean) => Promise<void>;
   sendEmoticon: (roomCode: string, emoticon: Emoticon) => Promise<void>;
+  sendOptions: (roomCode: string, lie: string, factId1: number, factId2: number) => Promise<void>;
 };
 
 const gameHubDataInit = {
   connected: false,
   room: {} as RoomResponse,
   isLoading: false,   
-  emoticonPlayer1: Emoticon.None,
-  emoticonPlayer2: Emoticon.None
+  emoticon: {} as EmoticonData,
+  game: {phase: GamePhase.Preparation, preparationPhaseData: {isPlayer1Ready:false, isPlayer2Ready:false }} as GameData
 }
 
 const GameHubContext = createContext<GameHubContextType | undefined>(undefined);
@@ -52,17 +53,29 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     connection.on("ReceiveEmoticon", (emotionResponse: SendEmoticonResponse) => {
-      if (emotionResponse.sender == "Player1"){
-        setData(prev => ({ ...prev, emoticonPlayer1:emotionResponse.emoticon }));
-        
-        setTimeout(() => {
-          setData(prev => ({...prev,emoticonPlayer1: Emoticon.None }));
-        }, 1200);
-      } else if (emotionResponse.sender == "Player2"){
-        setData(prev => ({ ...prev, emoticonPlayer2:emotionResponse.emoticon }));
+      if (emotionResponse.sender === "Player1") {
+        setData(prev => ({
+          ...prev,
+          emoticon: { ...prev.emoticon, player1Emot: emotionResponse.emoticon }
+        }));
 
         setTimeout(() => {
-          setData(prev => ({...prev,emoticonPlayer2: Emoticon.None }));
+          setData(prev => ({
+            ...prev,
+            emoticon: { ...prev.emoticon, player1Emot: Emoticon.None }
+          }));
+        }, 1200);
+      } else if (emotionResponse.sender === "Player2") {
+        setData(prev => ({
+          ...prev,
+          emoticon: { ...prev.emoticon, player2Emot: emotionResponse.emoticon }
+        }));
+
+        setTimeout(() => {
+          setData(prev => ({
+            ...prev,
+            emoticon: { ...prev.emoticon, player2Emot: Emoticon.None }
+          }));
         }, 1200);
       }
     });
@@ -103,7 +116,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const joinRoom = useCallback(
     async (roomCode: string) => {
-      await invokeWithConnection("JoinRoom", {roomCode: roomCode});
+      await invokeWithConnection("JoinRoom", {roomCode});
     },
     [invokeWithConnection]
   );
@@ -117,7 +130,14 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const sendEmoticon = useCallback(
     async (roomCode: string, emoticon: Emoticon) => {
-      await invokeWithConnection("SendEmoticon", {roomCode: roomCode, emoticon:emoticon});
+      await invokeWithConnection("SendEmoticon", {roomCode, emoticon});
+    },
+    [invokeWithConnection]
+  );
+
+  const sendOptions = useCallback(
+    async (roomCode: string, lie: string, factId1: number, factId2: number) => {
+      await invokeWithConnection("SendOptions", {roomCode, lie, factId1, factId2});
     },
     [invokeWithConnection]
   );
@@ -130,7 +150,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   return (
     <GameHubContext.Provider
-      value={{ ...data, connect, disconnect, joinRoom, setReadyState, sendEmoticon }}
+      value={{ ...data, connect, disconnect, joinRoom, setReadyState, sendEmoticon, sendOptions }}
     >
       {children}
     </GameHubContext.Provider>

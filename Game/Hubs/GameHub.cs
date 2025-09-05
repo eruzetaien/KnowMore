@@ -33,7 +33,7 @@ public class GameHub : Hub
         long userId = long.Parse(sub);
 
         string roomKey = $"room:{request.RoomCode}";
-        Room room = await GetRoom(roomKey);
+        Room room = await GetEntity<Room>(roomKey);
 
         string? playerRole = null;
 
@@ -49,7 +49,7 @@ public class GameHub : Hub
         {
             room.Player2 = userId;
             playerRole = "Player2";
-            await UpdateRoom(roomKey, room);
+            await UpdateEntity<Room>(roomKey, room);
         }
 
         if (playerRole is null)
@@ -69,21 +69,30 @@ public class GameHub : Hub
         long userId = long.Parse(sub);
 
         string roomKey = $"room:{request.RoomCode}";
-        Room room = await GetRoom(roomKey);
+        Room room = await GetEntity<Room>(roomKey);
 
-        if (userId != room.Player1 && userId != room.Player2) 
+        if (room.HasGameStarted) return;
+
+        if (userId != room.Player1 && userId != room.Player2)
             throw new HubException("Player is invalid");
 
         if (room.Player1 == userId)
             room.IsPlayer1Ready = request.IsReady;
         else
             room.IsPlayer2Ready = request.IsReady;
-        bool isAllPlayerReady = room.IsPlayer1Ready && room.IsPlayer2Ready;
-        room.HasGameStarted = isAllPlayerReady;
-        await UpdateRoom(roomKey, room);
+        room.HasGameStarted = room.IsPlayer1Ready && room.IsPlayer2Ready;
+        await UpdateEntity<Room>(roomKey, room);
 
-        _logger.LogInformation("New ready state : {state}", request.IsReady);
-        _logger.LogInformation("Updated room: {room}", JsonSerializer.Serialize(room));
+        if (room.HasGameStarted)
+        { 
+            string gameKey = $"game:{room.JoinCode}";
+            GameData game = new() { RoomCode = room.JoinCode };
+            string gameJson = JsonSerializer.Serialize(game);
+
+            int ttlInMinutes = 30;
+            IDatabase db = _redis.GetDatabase();
+            await db.StringSetAsync(gameKey, gameJson, TimeSpan.FromMinutes(ttlInMinutes));
+        }
 
         await Clients.Group(request.RoomCode)
             .SendAsync("ReceiveRoomUpdate", room);
@@ -98,31 +107,66 @@ public class GameHub : Hub
             new { Sender = role, Emoticon = request.Emoticon });   
     }
 
-    private async Task<Room> GetRoom(string roomKey)
+    public async Task SendOptions(SendOptionsRequest request)
+    {
+        if (!Context.Items.TryGetValue("PlayerRole", out var roleObj) || roleObj is not string role)
+            throw new HubException("Role not set");
+
+        string gameKey = $"game:{request.RoomCode}";
+        GameData game = await GetEntity<GameData>(gameKey);
+
+        if (role.Equals("Player1"))
+        {
+            game.Player1Lie = request.Lie;
+            game.Player1Options = Util.BuildPlayerOptions(request.FactId1, request.FactId2);
+            game.IsPlayer1Ready = true;
+        }
+        else if (role.Equals("Player2"))
+        {
+            game.Player2Lie = request.Lie;
+            game.Player2Options = Util.BuildPlayerOptions(request.FactId1, request.FactId2);
+            game.IsPlayer2Ready = true;
+        }
+        else
+        {
+            throw new HubException("Role not set");
+        }
+
+        if (game.IsPlayer1Ready && game.IsPlayer2Ready)
+        { 
+            await Clients.Group(request.RoomCode).SendAsync("StartPlayingPhase",
+                new {});   
+        }
+    }
+
+    private async Task<T> GetEntity<T>(string key)
     {
         IDatabase db = _redis.GetDatabase();
-        RedisValue roomValue = await db.StringGetAsync(roomKey);
+        RedisValue value = await db.StringGetAsync(key);
 
-        if (!roomValue.HasValue)
-            throw new HubException("Room not found");
+        if (!value.HasValue)
+            throw new HubException($"{typeof(T).Name} not found");
 
         try
         {
-            return JsonSerializer.Deserialize<Room>(roomValue!)!;
+            return JsonSerializer.Deserialize<T>(value!) 
+                ?? throw new HubException($"{typeof(T).Name} data corrupted");
         }
         catch (JsonException)
         {
-            throw new HubException("Room data corrupted");
+            throw new HubException($"{typeof(T).Name} data corrupted");
         }
     }
 
-    private async Task UpdateRoom(string roomKey, Room room)
+    private async Task UpdateEntity<T>(string key, T entity)
     {
         IDatabase db = _redis.GetDatabase();
-        string updatedJson = JsonSerializer.Serialize(room);
-        await db.StringSetAsync(roomKey, updatedJson);
+        string updatedJson = JsonSerializer.Serialize(entity);
+        await db.StringSetAsync(key, updatedJson);
     }
 
+
+    
 
     public async Task LeaveRoom(string roomCode)
     {
