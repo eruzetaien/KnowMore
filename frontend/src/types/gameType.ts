@@ -24,9 +24,6 @@ export interface PlayerOption {
 export interface GameData {
   roomCode: string;
   phase: GamePhase;
-  preparationPhaseData: PreparationPhaseData;
-  playingPhaseData: PlayingPhaseData;
-  resultPhaseData: ResultPhaseData
 }
 
 export interface EmoticonData {

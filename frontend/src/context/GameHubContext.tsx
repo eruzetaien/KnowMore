@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import * as signalR from "@microsoft/signalr";
 import type { JoinRoomResponse, RoomResponse } from "../types/roomType";
-import type { EmoticonData, GameData, SendEmoticonResponse } from "../types/gameType";
+import type { EmoticonData, GameData, PlayingPhaseData, PreparationPhaseData, ResultPhaseData, SendEmoticonResponse } from "../types/gameType";
 import { Emoticon, GamePhase} from "../types/gameType";
 
 type GameHubData = {
@@ -10,6 +10,9 @@ type GameHubData = {
   isLoading: boolean;
   emoticon: EmoticonData;
   game: GameData;
+  preparationPhaseData: PreparationPhaseData;
+  playingPhaseData: PlayingPhaseData;
+  resultPhaseData: ResultPhaseData;
 };
 
 type GameHubContextType = GameHubData & {
@@ -26,7 +29,10 @@ const gameHubDataInit = {
   room: {} as RoomResponse,
   isLoading: false,   
   emoticon: {} as EmoticonData,
-  game: {phase: GamePhase.Preparation, preparationPhaseData: {isPlayer1Ready:false, isPlayer2Ready:false }} as GameData
+  game: {phase: GamePhase.Preparation} as GameData,
+  preparationPhaseData: {isPlayer1Ready:false, isPlayer2Ready:false} as PreparationPhaseData,
+  playingPhaseData: {} as PlayingPhaseData,
+  resultPhaseData: {} as ResultPhaseData,
 }
 
 const GameHubContext = createContext<GameHubContextType | undefined>(undefined);
