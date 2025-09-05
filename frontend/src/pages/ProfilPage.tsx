@@ -1,7 +1,7 @@
-import { useUserProfile } from "../hooks/useUserProfile";
+import { useProfileQuery } from "../hooks/useUserProfile";
 
 const ProfilePage = () => {
-  const { data: user, isLoading, isError, error } = useUserProfile();
+  const { data: user, isLoading, isError, error } = useProfileQuery();
 
   if (isLoading) return <p>Loading...</p>;
   if (isError) return <p>Failed to load profile: {(error as Error).message}</p>;
