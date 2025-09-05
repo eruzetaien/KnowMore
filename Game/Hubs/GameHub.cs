@@ -9,11 +9,13 @@ public class GameHub : Hub
 {
 
     private readonly IConnectionMultiplexer _redis;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger _logger;
 
-    public GameHub(IConnectionMultiplexer redis, ILogger<GameHub> logger)
+    public GameHub(IConnectionMultiplexer redis, IHttpClientFactory httpClientFactory, ILogger<GameHub> logger)
     {
         _redis = redis;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
@@ -138,9 +140,49 @@ public class GameHub : Hub
 
         if (game.IsPlayer1Ready && game.IsPlayer2Ready)
         {
-            await Clients.Group(request.RoomCode).SendAsync("StartPlayingPhase",
-                new { });
+            game.IsPlayer1Ready = game.IsPlayer2Ready = false;
+            await UpdateEntity<GameData>(gameKey, game);
+
+            var player1Options = new List<Object>();
+            for (int i = 0; i < game.Player1Options.Length; i++)
+            {
+                long id = game.Player1Options[i];
+                string desc;
+                if (id == 0)
+                    desc = game.Player1Lie;
+                else
+                    desc = await FetchFactDescription(id);
+                player1Options.Add(new { idx=i, description=desc });
+            }
+
+            var player2Options = new List<Object>();
+            for (int i = 0; i < game.Player2Options.Length; i++)
+            {
+                long id = game.Player2Options[i];
+                string desc;
+                if (id == 0)
+                    desc = game.Player2Lie;
+                else
+                    desc = await FetchFactDescription(id);
+                player2Options.Add(new { idx=i, description=desc });
+            }
+
+            await Clients.Group(request.RoomCode).SendAsync("InitPlayingPhase",
+                new { player1Options, player2Options });
+            await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
+                new { phase=GamePhase.Playing});
         }
+    }
+    
+    private async Task<string> FetchFactDescription(long id)
+    {
+        HttpClient client = _httpClientFactory.CreateClient("FactService");
+        var response = await client.GetAsync($"/internal/facts/{id}");
+        if (!response.IsSuccessStatusCode)
+            return "[Fact not found]";
+
+        var fact = await response.Content.ReadFromJsonAsync<FactDTO>();
+        return fact?.Description ?? "[Invalid Fact]";
     }
 
     private async Task<T> GetEntity<T>(string key)
@@ -153,7 +195,7 @@ public class GameHub : Hub
 
         try
         {
-            return JsonSerializer.Deserialize<T>(value!) 
+            return JsonSerializer.Deserialize<T>(value!)
                 ?? throw new HubException($"{typeof(T).Name} data corrupted");
         }
         catch (JsonException)

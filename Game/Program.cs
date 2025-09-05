@@ -10,13 +10,21 @@ Env.Load();
 
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect("localhost"));
-builder.Services.AddHttpClient();
 
 builder.Services
     .AddDatabase<FactDb>()
     .AddJwtAuth()
     .AddCustomCors();
 
+builder.Services.AddHttpClient("FactService", client =>
+{
+    string factBaseUrl = Environment.GetEnvironmentVariable("FACT_BASE_URL")
+        ?? throw new InvalidOperationException("FACT_BASE_URL environment variable is not set.");
+    client.BaseAddress = new Uri(factBaseUrl);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.DefaultRequestHeaders.Add("X-API-KEY", Environment.GetEnvironmentVariable("API_KEY"));
+});
+    
 var app = builder.Build();
 
 app.UseCors("FrontendPolicy");
