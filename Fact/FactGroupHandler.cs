@@ -45,7 +45,7 @@ public static class FactGroupHandler
             string normalizedName = createDto.Name.ToLowerInvariant();
             if (await db.FactGroups.AnyAsync(u =>
                 u.NormalizedName == normalizedName &&
-                u.UserId != userId))
+                u.UserId == userId))
             {
                 return Results.BadRequest(new[] { $"FactGroup with name '{createDto.Name}' already exists." });
             }
