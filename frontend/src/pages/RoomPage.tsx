@@ -40,7 +40,7 @@ function RoomPage() {
         <div className="grid grid-cols-2 gap-4 mb-8">
           <div className="flex flex-col items-center p-4 bg-gray-800 rounded-xl">
             <h2 className="font-semibold">Master</h2>
-            <p className="mt-2">{room?.roomMaster ?? "-"}</p>
+            <p className="mt-2">{room?.player1 ?? "-"}</p>
             <span
               className={`text-xs mt-1 ${
                 room.isPlayer1Ready ? "text-green-400" : "text-red-400"
@@ -53,7 +53,7 @@ function RoomPage() {
 
           <div className="flex flex-col items-center p-4 bg-gray-800 rounded-xl">
             <h2 className="font-semibold">Player 2</h2>
-            <p className="mt-2">{room?.secondPlayer ?? "-"}</p>
+            <p className="mt-2">{room?.player2 ?? "-"}</p>
             <span
               className={`text-xs mt-1 ${
                 room.isPlayer2Ready ? "text-green-400" : "text-red-400"

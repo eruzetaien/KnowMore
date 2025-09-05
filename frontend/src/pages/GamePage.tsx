@@ -22,7 +22,7 @@ function GamePage() {
           {/* Master */}
           <div className="relative flex flex-col items-center p-4 bg-gray-800 rounded-xl">
             <h2 className="font-semibold">Master</h2>
-            <p className="mt-2">{room?.roomMaster ?? "-"}</p>
+            <p className="mt-2">{room?.player1 ?? "-"}</p>
 
             {emoticonPlayer1 !== Emoticon.None && (
               <img
@@ -37,7 +37,7 @@ function GamePage() {
           {/* Player 2 */}
           <div className="relative flex flex-col items-center p-4 bg-gray-800 rounded-xl">
             <h2 className="font-semibold">Player 2</h2>
-            <p className="mt-2">{room?.secondPlayer ?? "-"}</p>
+            <p className="mt-2">{room?.player1 ?? "-"}</p>
 
             {emoticonPlayer2 !== Emoticon.None && (
               <img

@@ -37,17 +37,17 @@ public class GameHub : Hub
 
         string? playerRole = null;
 
-        if (room.RoomMaster == userId)
+        if (room.Player1 == userId)
         {
             playerRole = "Player1";
         }
-        else if (room.SecondPlayer == userId)
+        else if (room.Player2 == userId)
         {
             playerRole = "Player2";
         }
-        else if (room.SecondPlayer is null or 0)
+        else if (room.Player2 is null or 0)
         {
-            room.SecondPlayer = userId;
+            room.Player2 = userId;
             playerRole = "Player2";
             await UpdateRoom(roomKey, room);
         }
@@ -71,10 +71,10 @@ public class GameHub : Hub
         string roomKey = $"room:{request.RoomCode}";
         Room room = await GetRoom(roomKey);
 
-        if (userId != room.RoomMaster && userId != room.SecondPlayer) 
+        if (userId != room.Player1 && userId != room.Player2) 
             throw new HubException("Player is invalid");
 
-        if (room.RoomMaster == userId)
+        if (room.Player1 == userId)
             room.IsPlayer1Ready = request.IsReady;
         else
             room.IsPlayer2Ready = request.IsReady;
