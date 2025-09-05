@@ -26,6 +26,15 @@ export interface PlayerOption {
   description: string
 }
 
+export interface InitPlayingPhaseResponse {
+  player1Options: PlayerOption[];
+  player2Options: PlayerOption[];
+}
+
+export interface SetGamePhaseResponse {
+  phase: GamePhase;
+}
+
 export interface GameData {
   roomCode: string;
   phase: GamePhase;
@@ -44,5 +53,9 @@ export interface PreparationPhaseData {
 export interface PlayingPhaseData {
   player1Options: PlayerOption[];
   player2Options: PlayerOption[];
+  player1Answer: number;
+  player2Answer: number;
+  isPlayer1Ready: boolean;
+  isPlayer2Ready: boolean;
 }
 export interface ResultPhaseData {}

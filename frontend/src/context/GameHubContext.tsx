@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import * as signalR from "@microsoft/signalr";
 import type { JoinRoomResponse, RoomResponse } from "../types/roomType";
-import type { EmoticonData, GameData, PlayingPhaseData, PreparationPhaseData, ResultPhaseData, SendEmoticonResponse, SendOptionsResponse } from "../types/gameType";
+import type { EmoticonData, GameData, InitPlayingPhaseResponse, PlayingPhaseData, PreparationPhaseData, ResultPhaseData, SendEmoticonResponse, SendOptionsResponse, SetGamePhaseResponse } from "../types/gameType";
 import { Emoticon, GamePhase} from "../types/gameType";
 
 type GameHubData = {
@@ -93,6 +93,26 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
             isPlayer1Ready: respose.isPlayer1Ready, 
             isPlayer2Ready: respose.isPlayer2Ready
           }
+        }));
+    });
+
+    connection.on("InitPlayingPhase", (respose: InitPlayingPhaseResponse) => {
+      setData(prev => ({
+          ...prev,
+          playingPhaseData: {
+            player1Options: respose.player1Options, 
+            player2Options: respose.player2Options, 
+            isPlayer1Ready: false,
+            isPlayer2Ready: false,
+            player1Answer:-1,
+            player2Answer:-1
+          }
+        }));
+    });
+
+    connection.on("SetGamePhase", (respose: SetGamePhaseResponse) => {
+      setData(prev => ({...prev,
+          game: {...prev.game, phase:respose.phase}
         }));
     });
 
