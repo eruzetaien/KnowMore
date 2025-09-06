@@ -18,6 +18,8 @@ public class GameData
     public string Player2Lie { get; set; } = string.Empty;
     public long[] Player1Statements { get; set; } = new long[3];
     public long[] Player2Statements { get; set; } = new long[3];
+    public int Player1Answer { get; set; }
+    public int Player2Answer { get; set; }
     public int Player1Score { get; set; }
     public int Player2Score { get; set; } 
     public bool IsPlayer1Ready { get; set; }

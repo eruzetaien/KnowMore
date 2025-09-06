@@ -18,7 +18,7 @@ public enum GamePhase
 {
     Preparation = 0,
     Playing = 1,
-    Result = 1,
+    Result = 2,
 }
 
 public class JoinRoomRequest()
@@ -41,7 +41,13 @@ public class SendEmoticonRequest()
 public class SendStatementsRequest()
 {
     public string RoomCode { get; set; } = string.Empty;
-    public string Lie { get; set; } = string.Empty; 
-    public long FactId1 { get; set;} 
-    public long FactId2 { get; set;} 
+    public string Lie { get; set; } = string.Empty;
+    public long FactId1 { get; set; }
+    public long FactId2 { get; set; }
+}
+
+public class SendAnswerRequest()
+{
+    public string RoomCode { get; set; } = string.Empty;
+    public int answerIdx { get; set;} 
 }

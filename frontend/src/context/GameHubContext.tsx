@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import * as signalR from "@microsoft/signalr";
 import type { JoinRoomResponse, RoomResponse } from "../types/roomType";
-import type { EmoticonData, GameData, InitPlayingPhaseResponse, PlayingPhaseData, PreparationPhaseData, ResultPhaseData, SendEmoticonResponse, SendStatementsResponse, SetGamePhaseResponse } from "../types/gameType";
+import type { EmoticonData, GameData, InitPlayingPhaseResponse, InitResultPhaseResponse, PlayingPhaseData, PreparationPhaseData, ResultPhaseData, SendEmoticonResponse, SendStatementsResponse, SetGamePhaseResponse } from "../types/gameType";
 import { Emoticon, GamePhase} from "../types/gameType";
 
 type GameHubData = {
@@ -22,6 +22,7 @@ type GameHubContextType = GameHubData & {
   setReadyState: (roomCode: string, isReady: boolean) => Promise<void>;
   sendEmoticon: (roomCode: string, emoticon: Emoticon) => Promise<void>;
   sendStatements: (roomCode: string, lie: string, factId1: number, factId2: number) => Promise<void>;
+  sendAnswer:  (roomCode: string, answerIdx: number) => Promise<void>;
 };
 
 const gameHubDataInit = {
@@ -96,6 +97,16 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }));
     });
 
+    connection.on("ReceiveAnswer", (respose: SendStatementsResponse) => {
+      setData(prev => ({
+          ...prev,
+          playingPhaseData: { ...prev.playingPhaseData,
+            isPlayer1Ready: respose.isPlayer1Ready, 
+            isPlayer2Ready: respose.isPlayer2Ready
+          }
+        }));
+    });
+
     connection.on("InitPlayingPhase", (respose: InitPlayingPhaseResponse) => {
       setData(prev => ({
           ...prev,
@@ -108,7 +119,18 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }));
     });
 
+    connection.on("InitResultPhase", (respose: InitResultPhaseResponse) => {
+      setData(prev => ({
+          ...prev,
+          resultPhaseData: {
+            isPlayer1Ready: false,
+            isPlayer2Ready: false
+          }
+        }));
+    });
+
     connection.on("SetGamePhase", (respose: SetGamePhaseResponse) => {
+      console.log("Game Phase: ", respose.phase)
       setData(prev => ({...prev,
           game: {...prev.game, phase:respose.phase}
         }));
@@ -176,6 +198,13 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [invokeWithConnection]
   );
 
+  const sendAnswer = useCallback(
+    async (roomCode: string, answerIdx: number) => {
+      await invokeWithConnection("SendAnswer", {roomCode, answerIdx});
+    },
+    [invokeWithConnection]
+  );
+
   useEffect(() => {
     return () => {
       disconnect();
@@ -184,7 +213,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   return (
     <GameHubContext.Provider
-      value={{ ...data, connect, disconnect, joinRoom, setReadyState, sendEmoticon, sendStatements }}
+      value={{ ...data, connect, disconnect, joinRoom, setReadyState, sendEmoticon, sendStatements, sendAnswer }}
     >
       {children}
     </GameHubContext.Provider>

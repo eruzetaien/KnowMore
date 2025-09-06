@@ -32,6 +32,8 @@ export interface InitPlayingPhaseResponse {
   opponentStatements: PlayerStatement[];
 }
 
+export interface InitResultPhaseResponse {}
+
 export interface SetGamePhaseResponse {
   phase: GamePhase;
 }
@@ -52,4 +54,4 @@ export interface PlayingPhaseData extends PlayerReadiness {
   opponentStatements: PlayerStatement[];
   playerAnswer: number;
 }
-export interface ResultPhaseData {}
+export interface ResultPhaseData extends PlayerReadiness {}

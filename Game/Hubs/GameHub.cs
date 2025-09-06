@@ -150,7 +150,7 @@ public class GameHub : Hub
         await UpdateEntity<GameData>(gameKey, game);
         
         await Clients.Group(request.RoomCode).SendAsync("ReceiveStatements",
-                new { IsPlayer1Ready= game.IsPlayer1Ready, IsPlayer2Ready= game.IsPlayer2Ready });
+                new { game.IsPlayer1Ready, game.IsPlayer2Ready });
 
         if (game.IsPlayer1Ready && game.IsPlayer2Ready)
         {
@@ -189,6 +189,47 @@ public class GameHub : Hub
 
             await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
                 new { phase = GamePhase.Playing });
+        }
+    }
+
+    public async Task SendAnswer(SendAnswerRequest request)
+    {
+        string? sub = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (sub is null)
+            throw new HubException("Unauthorized: missing claim");
+        long userId = long.Parse(sub);
+
+        string gameKey = $"game:{request.RoomCode}";
+        GameData game = await GetEntity<GameData>(gameKey);
+        if (game.Player1 == userId)
+        {
+            game.Player1Answer = request.answerIdx;
+            game.IsPlayer1Ready = true;
+        }
+        else if (game.Player2 == userId)
+        {
+            game.Player2Answer = request.answerIdx;
+            game.IsPlayer2Ready = true;
+        }
+        else
+            throw new HubException("You are not a participant in this game");
+
+        await UpdateEntity<GameData>(gameKey, game);
+
+        await Clients.Group(request.RoomCode).SendAsync("ReceiveAnswer",
+                new { game.IsPlayer1Ready, game.IsPlayer2Ready });
+
+        if (game.IsPlayer1Ready && game.IsPlayer2Ready)
+        {
+            game.IsPlayer1Ready = game.IsPlayer2Ready = false;
+            await UpdateEntity<GameData>(gameKey, game);
+
+            // TODO process result
+            await Clients.Group(request.RoomCode).SendAsync("InitResultPhase",
+                new {});
+
+            await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
+                new { phase = GamePhase.Result });
         }
     }
     
