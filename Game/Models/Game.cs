@@ -14,8 +14,8 @@ public class GameData
     public required string RoomCode { get; set; }
     public string Player1Lie { get; set; } = string.Empty;
     public string Player2Lie { get; set; } = string.Empty;
-    public long[] Player1Options { get; set; } = new long[3];
-    public long[] Player2Options { get; set; } = new long[3];
+    public long[] Player1Statements { get; set; } = new long[3];
+    public long[] Player2Statements { get; set; } = new long[3];
     public int Player1Score { get; set; }
     public int Player2Score { get; set; } 
     public bool IsPlayer1Ready { get; set; }

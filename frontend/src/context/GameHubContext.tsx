@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import * as signalR from "@microsoft/signalr";
 import type { JoinRoomResponse, RoomResponse } from "../types/roomType";
-import type { EmoticonData, GameData, InitPlayingPhaseResponse, PlayingPhaseData, PreparationPhaseData, ResultPhaseData, SendEmoticonResponse, SendOptionsResponse, SetGamePhaseResponse } from "../types/gameType";
+import type { EmoticonData, GameData, InitPlayingPhaseResponse, PlayingPhaseData, PreparationPhaseData, ResultPhaseData, SendEmoticonResponse, SendStatementsResponse, SetGamePhaseResponse } from "../types/gameType";
 import { Emoticon, GamePhase} from "../types/gameType";
 
 type GameHubData = {
@@ -21,7 +21,7 @@ type GameHubContextType = GameHubData & {
   joinRoom: (roomCode: string) => Promise<void>;
   setReadyState: (roomCode: string, isReady: boolean) => Promise<void>;
   sendEmoticon: (roomCode: string, emoticon: Emoticon) => Promise<void>;
-  sendOptions: (roomCode: string, lie: string, factId1: number, factId2: number) => Promise<void>;
+  sendStatements: (roomCode: string, lie: string, factId1: number, factId2: number) => Promise<void>;
 };
 
 const gameHubDataInit = {
@@ -86,7 +86,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     });
 
-    connection.on("ReceiveOptions", (respose: SendOptionsResponse) => {
+    connection.on("ReceiveStatements", (respose: SendStatementsResponse) => {
       setData(prev => ({
           ...prev,
           preparationPhaseData: { 
@@ -100,12 +100,10 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setData(prev => ({
           ...prev,
           playingPhaseData: {
-            player1Options: respose.player1Options, 
-            player2Options: respose.player2Options, 
+            opponentStatements: respose.opponentStatements, 
             isPlayer1Ready: false,
             isPlayer2Ready: false,
-            player1Answer:-1,
-            player2Answer:-1
+            playerAnswer:-1
           }
         }));
     });
@@ -171,9 +169,9 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [invokeWithConnection]
   );
 
-  const sendOptions = useCallback(
+  const sendStatements = useCallback(
     async (roomCode: string, lie: string, factId1: number, factId2: number) => {
-      await invokeWithConnection("SendOptions", {roomCode, lie, factId1, factId2});
+      await invokeWithConnection("SendStatements", {roomCode, lie, factId1, factId2});
     },
     [invokeWithConnection]
   );
@@ -186,7 +184,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   return (
     <GameHubContext.Provider
-      value={{ ...data, connect, disconnect, joinRoom, setReadyState, sendEmoticon, sendOptions }}
+      value={{ ...data, connect, disconnect, joinRoom, setReadyState, sendEmoticon, sendStatements }}
     >
       {children}
     </GameHubContext.Provider>

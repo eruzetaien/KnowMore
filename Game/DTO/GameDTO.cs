@@ -38,7 +38,7 @@ public class SendEmoticonRequest()
     public Emoticon Emoticon { get; set; }
 }
 
-public class SendOptionsRequest()
+public class SendStatementsRequest()
 {
     public string RoomCode { get; set; } = string.Empty;
     public string Lie { get; set; } = string.Empty; 

@@ -3,7 +3,7 @@ import { useAllUserFactQuery } from "../hooks/useFact";
 import { useGameHub } from "../context/GameHubContext";
 
 export default function PreparationPhase() {
-  const { preparationPhaseData, isLoading: hubLoading, sendOptions, room } = useGameHub();
+  const { preparationPhaseData, isLoading: hubLoading, sendStatements, room } = useGameHub();
   const { data: factGroups, isLoading: factLoading, error } = useAllUserFactQuery();
 
   const [selectedFacts, setSelectedFacts] = useState<number[]>([]);
@@ -30,7 +30,7 @@ export default function PreparationPhase() {
       alert("Please select exactly 2 facts and enter a lie.");
       return;
     }
-    await sendOptions(room.joinCode, lie, selectedFacts[0], selectedFacts[1]);
+    await sendStatements(room.joinCode, lie, selectedFacts[0], selectedFacts[1]);
     setSelectedFacts([]);
     setLie("");
   };
@@ -88,7 +88,7 @@ export default function PreparationPhase() {
         onClick={handleSubmit}
         className="mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded text-white"
       >
-        Submit Options
+        Submit Statements
       </button>
     </div>
   );

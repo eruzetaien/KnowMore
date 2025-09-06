@@ -109,7 +109,7 @@ public class GameHub : Hub
             new { Sender = role, Emoticon = request.Emoticon });   
     }
 
-    public async Task SendOptions(SendOptionsRequest request)
+    public async Task SendStatements(SendStatementsRequest request)
     {
         if (!Context.Items.TryGetValue("PlayerRole", out var roleObj) || roleObj is not string role)
             throw new HubException("Role not set");
@@ -120,13 +120,13 @@ public class GameHub : Hub
         if (role.Equals("Player1"))
         {
             game.Player1Lie = request.Lie;
-            game.Player1Options = Util.BuildPlayerOptions(request.FactId1, request.FactId2);
+            game.Player1Statements = Util.BuildPlayerStatements(request.FactId1, request.FactId2);
             game.IsPlayer1Ready = true;
         }
         else if (role.Equals("Player2"))
         {
             game.Player2Lie = request.Lie;
-            game.Player2Options = Util.BuildPlayerOptions(request.FactId1, request.FactId2);
+            game.Player2Statements = Util.BuildPlayerStatements(request.FactId1, request.FactId2);
             game.IsPlayer2Ready = true;
         }
         else
@@ -135,7 +135,7 @@ public class GameHub : Hub
         }
         await UpdateEntity<GameData>(gameKey, game);
         
-        await Clients.Group(request.RoomCode).SendAsync("ReceiveOptions",
+        await Clients.Group(request.RoomCode).SendAsync("ReceiveStatements",
                 new { IsPlayer1Ready= game.IsPlayer1Ready, IsPlayer2Ready= game.IsPlayer2Ready });
 
         if (game.IsPlayer1Ready && game.IsPlayer2Ready)
@@ -143,32 +143,32 @@ public class GameHub : Hub
             game.IsPlayer1Ready = game.IsPlayer2Ready = false;
             await UpdateEntity<GameData>(gameKey, game);
 
-            var player1Options = new List<Object>();
-            for (int i = 0; i < game.Player1Options.Length; i++)
+            var player1Statements = new List<Object>();
+            for (int i = 0; i < game.Player1Statements.Length; i++)
             {
-                long id = game.Player1Options[i];
+                long id = game.Player1Statements[i];
                 string desc;
                 if (id == 0)
                     desc = game.Player1Lie;
                 else
                     desc = await FetchFactDescription(id);
-                player1Options.Add(new { idx=i, description=desc });
+                player1Statements.Add(new { idx=i, description=desc });
             }
 
-            var player2Options = new List<Object>();
-            for (int i = 0; i < game.Player2Options.Length; i++)
+            var player2Statements = new List<Object>();
+            for (int i = 0; i < game.Player2Statements.Length; i++)
             {
-                long id = game.Player2Options[i];
+                long id = game.Player2Statements[i];
                 string desc;
                 if (id == 0)
                     desc = game.Player2Lie;
                 else
                     desc = await FetchFactDescription(id);
-                player2Options.Add(new { idx=i, description=desc });
+                player2Statements.Add(new { idx=i, description=desc });
             }
 
             await Clients.Group(request.RoomCode).SendAsync("InitPlayingPhase",
-                new { player1Options, player2Options });
+                new { player1Statements, player2Statements });
             await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
                 new { phase=GamePhase.Playing});
         }
