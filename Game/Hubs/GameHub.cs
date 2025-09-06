@@ -28,11 +28,7 @@ public class GameHub : Hub
 
     public async Task JoinRoom(JoinRoomRequest request)
     {
-        string? sub = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (sub is null)
-            throw new HubException("Unauthorized: missing claim");
-
-        long userId = long.Parse(sub);
+        long userId = GetUserId();
 
         string roomKey = $"room:{request.RoomCode}";
         Room room = await GetEntity<Room>(roomKey);
@@ -64,10 +60,7 @@ public class GameHub : Hub
     
     public async Task SetPlayerReadyState(SetPlayerReadyStateRequest request)
     {
-        string? sub = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (sub is null)
-            throw new HubException("Unauthorized: missing claim");
-        long userId = long.Parse(sub);
+        long userId = GetUserId();
 
         string roomKey = $"room:{request.RoomCode}";
         Room room = await GetEntity<Room>(roomKey);
@@ -102,10 +95,7 @@ public class GameHub : Hub
 
     public async Task SendEmoticon(SendEmoticonRequest request)
     {
-        string? sub = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (sub is null)
-            throw new HubException("Unauthorized: missing claim");
-        long userId = long.Parse(sub);
+        long userId = GetUserId();
         
         string gameKey = $"game:{request.RoomCode}";
         GameData game = await GetEntity<GameData>(gameKey);
@@ -125,10 +115,7 @@ public class GameHub : Hub
 
     public async Task SendStatements(SendStatementsRequest request)
     {
-        string? sub = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (sub is null)
-            throw new HubException("Unauthorized: missing claim");
-        long userId = long.Parse(sub);
+        long userId = GetUserId();
         
         string gameKey = $"game:{request.RoomCode}";
         GameData game = await GetEntity<GameData>(gameKey);
@@ -194,10 +181,7 @@ public class GameHub : Hub
 
     public async Task SendAnswer(SendAnswerRequest request)
     {
-        string? sub = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (sub is null)
-            throw new HubException("Unauthorized: missing claim");
-        long userId = long.Parse(sub);
+        long userId = GetUserId();
 
         string gameKey = $"game:{request.RoomCode}";
         GameData game = await GetEntity<GameData>(gameKey);
@@ -232,6 +216,16 @@ public class GameHub : Hub
                 new { phase = GamePhase.Result });
         }
     }
+
+    private long GetUserId()
+    {
+        string? sub = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(sub))
+            throw new HubException("Unauthorized: missing claim");
+
+        return long.Parse(sub);
+    }
+
     
     private async Task<string> FetchFactDescription(long id)
     {
