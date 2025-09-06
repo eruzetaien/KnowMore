@@ -47,7 +47,7 @@ public class GameHub : Hub
         {
             playerRole = "Player2";
         }
-        else if (room.Player2 is null or 0)
+        else if (room.Player2 == 0)
         {
             room.Player2 = userId;
             playerRole = "Player2";
@@ -57,7 +57,6 @@ public class GameHub : Hub
         if (playerRole is null)
             throw new HubException("Room is full or you are not allowed to join");
 
-        Context.Items["PlayerRole"] = playerRole;
         await Groups.AddToGroupAsync(Context.ConnectionId, request.RoomCode);
         await Clients.Caller.SendAsync("PlayerJoined", new {Role = playerRole});
         await Clients.Group(request.RoomCode).SendAsync("ReceiveRoomUpdate", room);
@@ -86,14 +85,15 @@ public class GameHub : Hub
         await UpdateEntity<Room>(roomKey, room);
 
         if (room.HasGameStarted)
-        { 
+        {
             string gameKey = $"game:{room.JoinCode}";
-            GameData game = new() { RoomCode = room.JoinCode };
+            GameData game = new() { RoomCode = room.JoinCode, Player1=room.Player1, Player2=room.Player2 };
             string gameJson = JsonSerializer.Serialize(game);
 
             int ttlInMinutes = 30;
             IDatabase db = _redis.GetDatabase();
             await db.StringSetAsync(gameKey, gameJson, TimeSpan.FromMinutes(ttlInMinutes));
+            await db.KeyDeleteAsync(roomKey);
         }
 
         await Clients.Group(request.RoomCode)
@@ -102,37 +102,51 @@ public class GameHub : Hub
 
     public async Task SendEmoticon(SendEmoticonRequest request)
     {
-        if (!Context.Items.TryGetValue("PlayerRole", out var roleObj) || roleObj is not string role)
-            throw new HubException("Role not set");
+        string? sub = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (sub is null)
+            throw new HubException("Unauthorized: missing claim");
+        long userId = long.Parse(sub);
+        
+        string gameKey = $"game:{request.RoomCode}";
+        GameData game = await GetEntity<GameData>(gameKey);
+        string? senderRole = null;
+        if (game.Player1 == userId)
+        {
+            senderRole = "Player1";
+        }
+        else if (game.Player2 == userId)
+        {
+            senderRole = "Player2";
+        }
 
         await Clients.Group(request.RoomCode).SendAsync("ReceiveEmoticon",
-            new { Sender = role, Emoticon = request.Emoticon });   
+            new { Sender = senderRole, Emoticon = request.Emoticon });   
     }
 
     public async Task SendStatements(SendStatementsRequest request)
     {
-        if (!Context.Items.TryGetValue("PlayerRole", out var roleObj) || roleObj is not string role)
-            throw new HubException("Role not set");
-
+        string? sub = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (sub is null)
+            throw new HubException("Unauthorized: missing claim");
+        long userId = long.Parse(sub);
+        
         string gameKey = $"game:{request.RoomCode}";
         GameData game = await GetEntity<GameData>(gameKey);
-
-        if (role.Equals("Player1"))
+        if (game.Player1 == userId)
         {
             game.Player1Lie = request.Lie;
             game.Player1Statements = Util.BuildPlayerStatements(request.FactId1, request.FactId2);
             game.IsPlayer1Ready = true;
         }
-        else if (role.Equals("Player2"))
+        else if (game.Player2 == userId)
         {
             game.Player2Lie = request.Lie;
             game.Player2Statements = Util.BuildPlayerStatements(request.FactId1, request.FactId2);
             game.IsPlayer2Ready = true;
         }
         else
-        {
-            throw new HubException("Role not set");
-        }
+            throw new HubException("You are not a participant in this game");
+           
         await UpdateEntity<GameData>(gameKey, game);
         
         await Clients.Group(request.RoomCode).SendAsync("ReceiveStatements",
@@ -154,6 +168,9 @@ public class GameHub : Hub
                     desc = await FetchFactDescription(id);
                 player1Statements.Add(new { idx=i, description=desc });
             }
+            // Send Player 1 statement to Player 2, its opponent
+            await Clients.User(game.Player2.ToString()).SendAsync("InitPlayingPhase",
+                new { OpponentStatements = player1Statements });
 
             var player2Statements = new List<Object>();
             for (int i = 0; i < game.Player2Statements.Length; i++)
@@ -166,11 +183,12 @@ public class GameHub : Hub
                     desc = await FetchFactDescription(id);
                 player2Statements.Add(new { idx=i, description=desc });
             }
+            // Send Player 2 statement to Player 1, its opponent
+            await Clients.User(game.Player1.ToString()).SendAsync("InitPlayingPhase",
+                new { OpponentStatements = player2Statements });
 
-            await Clients.Group(request.RoomCode).SendAsync("InitPlayingPhase",
-                new { player1Statements, player2Statements });
             await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
-                new { phase=GamePhase.Playing});
+                new { phase = GamePhase.Playing });
         }
     }
     

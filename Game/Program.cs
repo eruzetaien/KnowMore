@@ -48,7 +48,7 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
         JoinCode = joinCode,
         Name = createDto.Name,
         Player1 = userId,
-        Player2 = null,
+        Player2 = 0,
         IsPlayer1Ready = false,
         IsPlayer2Ready = false,
         HasGameStarted = false
