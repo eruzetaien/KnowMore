@@ -1,4 +1,3 @@
-using System.Data.Common;
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
@@ -33,28 +32,27 @@ public class GameHub : Hub
         string roomKey = $"room:{request.RoomCode}";
         Room room = await GetEntity<Room>(roomKey);
 
-        string? playerRole = null;
-
+        PlayerSlot playerSlot = PlayerSlot.None;
         if (room.Player1 == userId)
         {
-            playerRole = "Player1";
+            playerSlot = PlayerSlot.Player1;
         }
         else if (room.Player2 == userId)
         {
-            playerRole = "Player2";
+            playerSlot = PlayerSlot.Player2;
         }
         else if (room.Player2 == 0)
         {
             room.Player2 = userId;
-            playerRole = "Player2";
+            playerSlot = PlayerSlot.Player2;
             await UpdateEntity<Room>(roomKey, room);
         }
 
-        if (playerRole is null)
+        if (playerSlot == PlayerSlot.None)
             throw new HubException("Room is full or you are not allowed to join");
 
         await Groups.AddToGroupAsync(Context.ConnectionId, request.RoomCode);
-        await Clients.Caller.SendAsync("PlayerJoined", new {Role = playerRole});
+        await Clients.Caller.SendAsync("PlayerJoined", new {Role = playerSlot});
         await Clients.Group(request.RoomCode).SendAsync("ReceiveRoomUpdate", room);
     }
     
@@ -67,10 +65,12 @@ public class GameHub : Hub
 
         if (room.HasGameStarted) return;
 
-        if (userId != room.Player1 && userId != room.Player2)
+        PlayerSlot playerSlot = room.GetPlayerSlot(userId);
+
+        if (playerSlot == PlayerSlot.None)
             throw new HubException("Player is invalid");
 
-        if (room.Player1 == userId)
+        if (playerSlot == PlayerSlot.Player1)
             room.IsPlayer1Ready = request.IsReady;
         else
             room.IsPlayer2Ready = request.IsReady;
@@ -99,18 +99,10 @@ public class GameHub : Hub
         
         string gameKey = $"game:{request.RoomCode}";
         GameData game = await GetEntity<GameData>(gameKey);
-        string? senderRole = null;
-        if (game.Player1 == userId)
-        {
-            senderRole = "Player1";
-        }
-        else if (game.Player2 == userId)
-        {
-            senderRole = "Player2";
-        }
+        PlayerSlot playerSlot = game.GetPlayerSlot(userId);
 
         await Clients.Group(request.RoomCode).SendAsync("ReceiveEmoticon",
-            new { Sender = senderRole, Emoticon = request.Emoticon });   
+            new { Sender = playerSlot, Emoticon = request.Emoticon });   
     }
 
     public async Task SendStatements(SendStatementsRequest request)
@@ -119,13 +111,14 @@ public class GameHub : Hub
         
         string gameKey = $"game:{request.RoomCode}";
         GameData game = await GetEntity<GameData>(gameKey);
-        if (game.Player1 == userId)
+        PlayerSlot playerSlot = game.GetPlayerSlot(userId);
+        if (playerSlot == PlayerSlot.Player1)
         {
             game.Player1Lie = request.Lie;
             game.Player1Statements = Util.BuildPlayerStatements(request.FactId1, request.FactId2);
             game.IsPlayer1Ready = true;
         }
-        else if (game.Player2 == userId)
+        else if (playerSlot == PlayerSlot.Player1)
         {
             game.Player2Lie = request.Lie;
             game.Player2Statements = Util.BuildPlayerStatements(request.FactId1, request.FactId2);
@@ -185,12 +178,13 @@ public class GameHub : Hub
 
         string gameKey = $"game:{request.RoomCode}";
         GameData game = await GetEntity<GameData>(gameKey);
-        if (game.Player1 == userId)
+        PlayerSlot playerSlot = game.GetPlayerSlot(userId);
+        if (playerSlot == PlayerSlot.Player1)
         {
             game.Player1Answer = request.answerIdx;
             game.IsPlayer1Ready = true;
         }
-        else if (game.Player2 == userId)
+        else if (playerSlot == PlayerSlot.Player2)
         {
             game.Player2Answer = request.answerIdx;
             game.IsPlayer2Ready = true;
