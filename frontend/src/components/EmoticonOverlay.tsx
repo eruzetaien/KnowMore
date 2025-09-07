@@ -1,10 +1,10 @@
 // EmoticonsOverlay.tsx
 import { useGameHub } from "../context/GameHubContext";
 import emot1 from "../assets/emoticons/emot1.png";
-import { Emoticon } from "../types/gameType";
+import { Emoticon } from "../types/playerType";
 
 export default function EmoticonsOverlay() {
-  const { room, emoticon, sendEmoticon } = useGameHub();
+  const { room, allPlayerData, sendEmoticon } = useGameHub();
 
   const isPlayer1 = localStorage.getItem("player") === "Player1";
   const isPlayer2 = localStorage.getItem("player") === "Player2";
@@ -13,21 +13,21 @@ export default function EmoticonsOverlay() {
     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4">
       {/* Active emoticons */}
       <div className="flex gap-12">
-        {emoticon.player1Emot !== Emoticon.None && (
+        {allPlayerData.player1Emot !== Emoticon.None && (
           <img
             src={emot1}
             alt="Player 1 emoticon"
             className="w-12 h-12 emote-anim"
-            key={emoticon.player1Emot}
+            key={allPlayerData.player1Emot}
           />
         )}
 
-        {emoticon.player2Emot !== Emoticon.None && (
+        {allPlayerData.player2Emot !== Emoticon.None && (
           <img
             src={emot1}
             alt="Player 2 emoticon"
             className="w-12 h-12 emote-anim"
-            key={emoticon.player2Emot}
+            key={allPlayerData.player2Emot}
           />
         )}
       </div>
@@ -39,12 +39,12 @@ export default function EmoticonsOverlay() {
              sendEmoticon(room.joinCode, Emoticon.Shocked);
         }}
         disabled={
-          (isPlayer1 && emoticon.player1Emot !== Emoticon.None) ||
-          (isPlayer2 && emoticon.player2Emot !== Emoticon.None)
+          (isPlayer1 && allPlayerData.player1Emot !== Emoticon.None) ||
+          (isPlayer2 && allPlayerData.player2Emot !== Emoticon.None)
         }
         className={`px-4 py-2 rounded-lg transition ${
-          (isPlayer1 && emoticon.player1Emot !== Emoticon.None) ||
-          (isPlayer2 && emoticon.player2Emot !== Emoticon.None)
+          (isPlayer1 && allPlayerData.player1Emot !== Emoticon.None) ||
+          (isPlayer2 && allPlayerData.player2Emot !== Emoticon.None)
             ? "bg-gray-500 cursor-not-allowed"
             : "bg-blue-500 hover:bg-blue-600"
         }`}

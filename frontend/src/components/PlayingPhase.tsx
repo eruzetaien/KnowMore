@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useGameHub } from "../context/GameHubContext";
 
 export default function PlayingPhase() {
-  const { playingPhaseData, isLoading: hubLoading, room, sendAnswer } = useGameHub();
+  const { playingPhaseData, allPlayerData, isLoading: hubLoading, room, sendAnswer } = useGameHub();
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
   if (hubLoading) return <p>Loading hub connection...</p>;
@@ -18,8 +18,8 @@ export default function PlayingPhase() {
 
   // Determine if this player already submitted an answer
   const isAlreadyAnswered =
-    (playerRole === "Player1" && playingPhaseData.isPlayer1Ready) ||
-    (playerRole === "Player2" && playingPhaseData.isPlayer2Ready);
+    (playerRole === "Player1" && allPlayerData.isPlayer1Ready) ||
+    (playerRole === "Player2" && allPlayerData.isPlayer2Ready);
 
   return (
     <div>
@@ -60,8 +60,8 @@ export default function PlayingPhase() {
       </button>
 
       <div className="mt-6">
-        <p>Player 1 ready: {playingPhaseData.isPlayer1Ready ? "✅" : "❌"}</p>
-        <p>Player 2 ready: {playingPhaseData.isPlayer2Ready ? "✅" : "❌"}</p>
+        <p>Player 1 ready: {allPlayerData.isPlayer1Ready ? "✅" : "❌"}</p>
+        <p>Player 2 ready: {allPlayerData.isPlayer2Ready ? "✅" : "❌"}</p>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { useGameHub } from "../context/GameHubContext";
 
 function RoomPage() {
   const { roomCode } = useParams();
-  const { room, isLoading, joinRoom, setReadyState } = useGameHub();
+  const { room, allPlayerData, isLoading, joinRoom, setReadyState } = useGameHub();
 
   const [ready, setReady] = useState(false);
 
@@ -21,7 +21,8 @@ function RoomPage() {
   };
 
   const navigate = useNavigate();
-  if (room.hasGameStarted) navigate(`/game/${roomCode}`);
+  if (allPlayerData.isPlayer1Ready && allPlayerData.isPlayer2Ready) 
+    navigate(`/game/${roomCode}`);
 
   if (isLoading) return <p>Connecting to game hub...</p>;
 
@@ -30,36 +31,36 @@ function RoomPage() {
       <div className="bg-gray-700/60 backdrop-blur-md rounded-2xl shadow-lg p-8 w-full max-w-md">
         {/* Room Info */}
         <h1 className="text-2xl font-bold mb-2 text-center">
-          Room: {room?.name ?? "Unknown"}
+          Room: {room.name ?? "Unknown"}
         </h1>
         <p className="text-center text-gray-300 mb-6">
-          Code: <span className="font-mono">{room?.joinCode ?? roomCode}</span>
+          Code: <span className="font-mono">{room.joinCode ?? roomCode}</span>
         </p>
 
         {/* Players */}
         <div className="grid grid-cols-2 gap-4 mb-8">
           <div className="flex flex-col items-center p-4 bg-gray-800 rounded-xl">
             <h2 className="font-semibold">Master</h2>
-            <p className="mt-2">{room?.player1 ?? "-"}</p>
+            <p className="mt-2">{allPlayerData.player1 ?? "-"}</p>
             <span
               className={`text-xs mt-1 ${
-                room.isPlayer1Ready ? "text-green-400" : "text-red-400"
+                allPlayerData.isPlayer1Ready ? "text-green-400" : "text-red-400"
               }`}
             >
-              {room.isPlayer1Ready ? "Ready" : "Not Ready"}
+              {allPlayerData.isPlayer1Ready ? "Ready" : "Not Ready"}
             </span>
 
           </div>
 
           <div className="flex flex-col items-center p-4 bg-gray-800 rounded-xl">
             <h2 className="font-semibold">Player 2</h2>
-            <p className="mt-2">{room?.player2 ?? "-"}</p>
+            <p className="mt-2">{allPlayerData.player2 ?? "-"}</p>
             <span
               className={`text-xs mt-1 ${
-                room.isPlayer2Ready ? "text-green-400" : "text-red-400"
+                allPlayerData.isPlayer2Ready ? "text-green-400" : "text-red-400"
               }`}
             >
-              {room.isPlayer2Ready ? "Ready" : "Not Ready"}
+              {allPlayerData.isPlayer2Ready ? "Ready" : "Not Ready"}
             </span>
           </div>
         </div>

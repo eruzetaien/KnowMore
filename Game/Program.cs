@@ -60,7 +60,7 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
     var expiryAt = DateTimeOffset.UtcNow.AddMinutes(ttlInMinutes).ToUnixTimeSeconds();
     await db.SortedSetAddAsync("rooms:index", roomKey, expiryAt);
 
-    return Results.Ok(room);
+    return Results.Ok(new {room.JoinCode});
 })
 .RequireAuthorization()
 .AddEndpointFilter<ValidationFilter<CreateRoomDto>>();
@@ -81,7 +81,7 @@ app.MapGet("/rooms", async (ClaimsPrincipal userClaim, IConnectionMultiplexer re
     RedisKey[] redisKeys = validKeys.Select(v => (RedisKey)v.ToString()).ToArray();
     RedisValue[] roomJsons = await db.StringGetAsync(redisKeys);
 
-    List<Room> rooms = [];
+    List<RoomDto> rooms = [];
     List<RedisValue> hasStartedRoomKeys = [];
     foreach (RedisValue roomJson in roomJsons)
     {
@@ -94,7 +94,7 @@ app.MapGet("/rooms", async (ClaimsPrincipal userClaim, IConnectionMultiplexer re
             if (room.HasGameStarted)
                 hasStartedRoomKeys.Add(roomJson);
             else
-                rooms.Add(room);
+                rooms.Add(new RoomDto(room));
         }
     }
 

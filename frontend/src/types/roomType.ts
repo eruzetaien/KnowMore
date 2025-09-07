@@ -1,7 +1,9 @@
+import type { PlayerSlot } from "./playerType";
+
+// Rest API DTO
 export interface RoomResponse {
-  name: string;
   joinCode: string;
-  hasGameStarted: boolean;
+  name: string;
 }
 
 export interface CreateRoomRequest {
@@ -9,10 +11,5 @@ export interface CreateRoomRequest {
 }
 
 export interface JoinRoomResponse {
-  role: string;
-}
-
-export interface ReceivePlayerReadyStateResponse {
-  sender: string;
-  isReady: boolean; 
+  playerSlot: PlayerSlot;
 }

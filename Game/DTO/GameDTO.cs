@@ -8,6 +8,18 @@ public class CreateRoomDto
     public string Name { get; set; } = string.Empty;
 }
 
+public class RoomDto
+{
+    public string JoinCode { get; set; }
+    public string Name { get; set; }
+
+    public RoomDto(Room room)
+    {
+        JoinCode = room.JoinCode;
+        Name = room.Name;
+    }
+}
+
 public enum Emoticon
 {
     None = 0,

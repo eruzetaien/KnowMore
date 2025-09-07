@@ -3,7 +3,7 @@ import { useAllUserFactQuery } from "../hooks/useFact";
 import { useGameHub } from "../context/GameHubContext";
 
 export default function PreparationPhase() {
-  const { preparationPhaseData, isLoading: hubLoading, sendStatements, room } = useGameHub();
+  const { allPlayerData, isLoading: hubLoading, sendStatements, room } = useGameHub();
   const { data: factGroups, isLoading: factLoading, error } = useAllUserFactQuery();
 
   const [selectedFacts, setSelectedFacts] = useState<number[]>([]);
@@ -38,8 +38,8 @@ export default function PreparationPhase() {
   return (
     <div>
       <h2 className="text-xl font-bold mb-4">Preparation Phase</h2>
-      <p>Player 1 Ready: {preparationPhaseData.isPlayer1Ready ? "✅" : "❌"}</p>
-      <p>Player 2 Ready: {preparationPhaseData.isPlayer2Ready ? "✅" : "❌"}</p>
+      <p>Player 1 Ready: {allPlayerData.isPlayer1Ready ? "✅" : "❌"}</p>
+      <p>Player 2 Ready: {allPlayerData.isPlayer2Ready ? "✅" : "❌"}</p>
 
       <h3 className="text-lg font-semibold mt-4">Your Fact Groups</h3>
       {factGroups?.length ? (

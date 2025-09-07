@@ -52,8 +52,9 @@ public class GameHub : Hub
             throw new HubException("Room is full or you are not allowed to join");
 
         await Groups.AddToGroupAsync(Context.ConnectionId, request.RoomCode);
-        await Clients.Caller.SendAsync("PlayerJoined", new {Role = playerSlot});
-        await Clients.Group(request.RoomCode).SendAsync("ReceiveRoomUpdate", room);
+        await Clients.Caller.SendAsync("PlayerJoined", new { Role = playerSlot });
+        await Clients.Group(request.RoomCode).SendAsync("ReceiveRoomUpdate", new RoomDto(room));
+        await Clients.Group(request.RoomCode).SendAsync("InitRoom", new {room.Player1, room.Player2});
     }
     
     public async Task SetPlayerReadyState(SetPlayerReadyStateRequest request)
@@ -61,6 +62,7 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string roomKey = $"room:{request.RoomCode}";
+        _logger.LogInformation(roomKey);
         Room room = await GetEntity<Room>(roomKey);
 
         if (room.HasGameStarted) return;
@@ -76,21 +78,25 @@ public class GameHub : Hub
             room.IsPlayer2Ready = request.IsReady;
         room.HasGameStarted = room.IsPlayer1Ready && room.IsPlayer2Ready;
         await UpdateEntity<Room>(roomKey, room);
+        
+        await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
+                new { room.IsPlayer1Ready, room.IsPlayer2Ready });
 
         if (room.HasGameStarted)
         {
             string gameKey = $"game:{room.JoinCode}";
-            GameData game = new() { RoomCode = room.JoinCode, Player1=room.Player1, Player2=room.Player2 };
+            GameData game = new() { RoomCode = room.JoinCode, Player1 = room.Player1, Player2 = room.Player2 };
             string gameJson = JsonSerializer.Serialize(game);
 
             int ttlInMinutes = 30;
             IDatabase db = _redis.GetDatabase();
             await db.StringSetAsync(gameKey, gameJson, TimeSpan.FromMinutes(ttlInMinutes));
             await db.KeyDeleteAsync(roomKey);
+            await Clients.User(game.Player1.ToString()).SendAsync("InitPreparationPhase",
+                new { });
+            await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
+                new { phase = GamePhase.Preparation });
         }
-
-        await Clients.Group(request.RoomCode)
-            .SendAsync("ReceiveRoomUpdate", room);
     }
 
     public async Task SendEmoticon(SendEmoticonRequest request)
@@ -118,7 +124,7 @@ public class GameHub : Hub
             game.Player1Statements = Util.BuildPlayerStatements(request.FactId1, request.FactId2);
             game.IsPlayer1Ready = true;
         }
-        else if (playerSlot == PlayerSlot.Player1)
+        else if (playerSlot == PlayerSlot.Player2)
         {
             game.Player2Lie = request.Lie;
             game.Player2Statements = Util.BuildPlayerStatements(request.FactId1, request.FactId2);
@@ -130,7 +136,7 @@ public class GameHub : Hub
         await UpdateEntity<GameData>(gameKey, game);
         
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
-                new { playerSlot, isPlayerReady= true });
+                new { game.IsPlayer1Ready, game.IsPlayer2Ready });
 
         if (game.IsPlayer1Ready && game.IsPlayer2Ready)
         {
@@ -195,7 +201,7 @@ public class GameHub : Hub
         await UpdateEntity<GameData>(gameKey, game);
 
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
-                new { playerSlot, isPlayerReady= true });
+                new { game.IsPlayer1Ready, game.IsPlayer2Ready });
 
         if (game.IsPlayer1Ready && game.IsPlayer2Ready)
         {

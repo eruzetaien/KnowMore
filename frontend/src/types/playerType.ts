@@ -26,8 +26,8 @@ export interface AllPlayerData {
 
 // Hub DTO
 export interface PlayerReadinessResponse{
-  playerSlot: PlayerSlot;
-  isPlayerReady: boolean; 
+  isPlayer1Ready: boolean;
+  isPlayer2Ready: boolean; 
 }
 
 export interface SendEmoticonResponse {

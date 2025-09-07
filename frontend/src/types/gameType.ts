@@ -10,13 +10,19 @@ export interface PlayerStatement {
   description: string
 }
 
+// Room Initial Data
+export interface InitRoomResponse {
+  player1:number;
+  player2:number;
+}
+
+// Game Phase Initial Data
+export interface InitPreparationPhaseResponse {}
 export interface InitPlayingPhaseResponse {
   opponentStatements: PlayerStatement[];
 }
-
 export interface InitResultPhaseResponse {}
 
-export interface InitPreparationPhaseResponse {}
 
 export interface SetGamePhaseResponse {
   phase: GamePhase;
