@@ -129,8 +129,8 @@ public class GameHub : Hub
            
         await UpdateEntity<GameData>(gameKey, game);
         
-        await Clients.Group(request.RoomCode).SendAsync("ReceiveStatements",
-                new { game.IsPlayer1Ready, game.IsPlayer2Ready });
+        await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
+                new { playerSlot, isPlayerReady= true });
 
         if (game.IsPlayer1Ready && game.IsPlayer2Ready)
         {
@@ -194,8 +194,8 @@ public class GameHub : Hub
 
         await UpdateEntity<GameData>(gameKey, game);
 
-        await Clients.Group(request.RoomCode).SendAsync("ReceiveAnswer",
-                new { game.IsPlayer1Ready, game.IsPlayer2Ready });
+        await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
+                new { playerSlot, isPlayerReady= true });
 
         if (game.IsPlayer1Ready && game.IsPlayer2Ready)
         {

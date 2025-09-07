@@ -1,27 +1,9 @@
-export const Emoticon = {
-  None: 0,
-  Shocked: 1,
-} as const;
-export type Emoticon = (typeof Emoticon)[keyof typeof Emoticon];
-
 export const GamePhase = {
   Preparation: 0,
   Playing: 1,
   Result: 2,
 } as const;
 export type GamePhase = (typeof GamePhase)[keyof typeof GamePhase];
-
-export interface SendEmoticonResponse {
-  sender: string;
-  emoticon: Emoticon;
-}
-
-export interface PlayerReadiness {
-  isPlayer1Ready: boolean;
-  isPlayer2Ready: boolean;
-}
-
-export interface SendStatementsResponse extends PlayerReadiness {}
 
 export interface PlayerStatement {
   idx : number,
@@ -34,6 +16,8 @@ export interface InitPlayingPhaseResponse {
 
 export interface InitResultPhaseResponse {}
 
+export interface InitPreparationPhaseResponse {}
+
 export interface SetGamePhaseResponse {
   phase: GamePhase;
 }
@@ -43,15 +27,11 @@ export interface GameData {
   phase: GamePhase;
 }
 
-export interface EmoticonData {
-  player1Emot: Emoticon;
-  player2Emot: Emoticon;
-}
+export interface PreparationPhaseData {}
 
-export interface PreparationPhaseData extends PlayerReadiness {}
-
-export interface PlayingPhaseData extends PlayerReadiness {
+export interface PlayingPhaseData {
   opponentStatements: PlayerStatement[];
   playerAnswer: number;
 }
-export interface ResultPhaseData extends PlayerReadiness {}
+
+export interface ResultPhaseData {}

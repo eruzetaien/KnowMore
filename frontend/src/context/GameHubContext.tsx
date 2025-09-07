@@ -1,14 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import * as signalR from "@microsoft/signalr";
 import type { JoinRoomResponse, RoomResponse } from "../types/roomType";
-import type { EmoticonData, GameData, InitPlayingPhaseResponse, InitResultPhaseResponse, PlayingPhaseData, PreparationPhaseData, ResultPhaseData, SendEmoticonResponse, SendStatementsResponse, SetGamePhaseResponse } from "../types/gameType";
-import { Emoticon, GamePhase} from "../types/gameType";
+import type { GameData, InitPlayingPhaseResponse, InitPreparationPhaseResponse, InitResultPhaseResponse, PlayingPhaseData, PreparationPhaseData, ResultPhaseData, SetGamePhaseResponse } from "../types/gameType";
+import { GamePhase } from "../types/gameType";
+import { Emoticon, PlayerSlot, type PlayerData, type PlayerReadinessResponse, type SendEmoticonResponse } from "../types/playerType";
 
 type GameHubData = {
   connected: boolean;
   room: RoomResponse;
   isLoading: boolean;
-  emoticon: EmoticonData;
+  playerData: PlayerData;
   game: GameData;
   preparationPhaseData: PreparationPhaseData;
   playingPhaseData: PlayingPhaseData;
@@ -29,7 +30,7 @@ const gameHubDataInit = {
   connected: false,
   room: {} as RoomResponse,
   isLoading: false,   
-  emoticon: {} as EmoticonData,
+  playerData: {} as PlayerData,
   game: {phase: GamePhase.Preparation} as GameData,
   preparationPhaseData: {isPlayer1Ready:false, isPlayer2Ready:false} as PreparationPhaseData,
   playingPhaseData: {} as PlayingPhaseData,
@@ -59,85 +60,78 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setData(prev => ({ ...prev, room }));
     });
 
-    connection.on("ReceiveEmoticon", (emotionResponse: SendEmoticonResponse) => {
-      if (emotionResponse.sender === "Player1") {
+    connection.on("ReceiveEmoticon", (response: SendEmoticonResponse) => {
+      if (response.playerSlot == PlayerSlot.Player1) {
         setData(prev => ({
           ...prev,
-          emoticon: { ...prev.emoticon, player1Emot: emotionResponse.emoticon }
+          playerData: { ...prev.playerData, player1Emot: response.emoticon }
         }));
 
         setTimeout(() => {
           setData(prev => ({
             ...prev,
-            emoticon: { ...prev.emoticon, player1Emot: Emoticon.None }
+            emoticon: { ...prev.playerData, player1Emot: Emoticon.None }
           }));
         }, 1200);
-      } else if (emotionResponse.sender === "Player2") {
+      } else if (response.playerSlot == PlayerSlot.Player2) {
         setData(prev => ({
           ...prev,
-          emoticon: { ...prev.emoticon, player2Emot: emotionResponse.emoticon }
+          emoticon: { ...prev.playerData, player2Emot: response.emoticon }
         }));
 
         setTimeout(() => {
           setData(prev => ({
             ...prev,
-            emoticon: { ...prev.emoticon, player2Emot: Emoticon.None }
+            emoticon: { ...prev.playerData, player2Emot: Emoticon.None }
           }));
         }, 1200);
       }
     });
 
-    connection.on("ReceiveStatements", (respose: SendStatementsResponse) => {
-      setData(prev => ({
+    connection.on("ReceivePlayerReadiness", (response: PlayerReadinessResponse) => {
+      setData(prev => {
+        if (response.playerSlot === PlayerSlot.None) {
+          return prev; 
+        }
+
+        return {
           ...prev,
-          preparationPhaseData: { 
-            isPlayer1Ready: respose.isPlayer1Ready, 
-            isPlayer2Ready: respose.isPlayer2Ready
-          }
-        }));
+          preparationPhaseData: {
+            ...prev.preparationPhaseData,
+            [response.playerSlot === PlayerSlot.Player1 
+              ? "isPlayer1Ready" 
+              : "isPlayer2Ready"]: response.isPlayerReady,
+          },
+        };
+      });
     });
 
-    connection.on("ReceiveAnswer", (respose: SendStatementsResponse) => {
-      setData(prev => ({
-          ...prev,
-          playingPhaseData: { ...prev.playingPhaseData,
-            isPlayer1Ready: respose.isPlayer1Ready, 
-            isPlayer2Ready: respose.isPlayer2Ready
-          }
-        }));
+    connection.on("InitPreparationPhase", (response: InitPreparationPhaseResponse) => {
+      setData(prev => setGamePhase(prev, {}))
     });
 
-    connection.on("InitPlayingPhase", (respose: InitPlayingPhaseResponse) => {
-      setData(prev => ({
-          ...prev,
-          playingPhaseData: {
-            opponentStatements: respose.opponentStatements, 
-            isPlayer1Ready: false,
-            isPlayer2Ready: false,
-            playerAnswer:-1
-          }
-        }));
+    connection.on("InitPlayingPhase", (response: InitPlayingPhaseResponse) => {
+      setData(prev => setGamePhase(prev, {
+        playingPhaseData: {
+          opponentStatements: response.opponentStatements,
+          playerAnswer: -1,
+        }
+      }));
     });
 
-    connection.on("InitResultPhase", (respose: InitResultPhaseResponse) => {
-      setData(prev => ({
-          ...prev,
-          resultPhaseData: {
-            isPlayer1Ready: false,
-            isPlayer2Ready: false
-          }
-        }));
+    connection.on("InitResultPhase", (response: InitResultPhaseResponse) => {
+      setData(prev => setGamePhase(prev, {}))
     });
 
-    connection.on("SetGamePhase", (respose: SetGamePhaseResponse) => {
-      console.log("Game Phase: ", respose.phase)
+    connection.on("SetGamePhase", (response: SetGamePhaseResponse) => {
+      console.log("Game Phase: ", response.phase)
       setData(prev => ({...prev,
-          game: {...prev.game, phase:respose.phase}
+          game: {...prev.game, phase:response.phase}
         }));
     });
 
-    connection.on("PlayerJoined", (respose: JoinRoomResponse) => {
-      localStorage.setItem("player", respose.role); // P1ayer1 or Player2
+    connection.on("PlayerJoined", (response: JoinRoomResponse) => {
+      localStorage.setItem("player", response.role); // P1ayer1 or Player2
     });
 
     await connection.start();
@@ -225,3 +219,20 @@ export const useGameHub = () => {
   if (!ctx) throw new Error("useGameHub must be used within a GameHubProvider");
   return ctx;
 };
+
+
+function resetPlayerReadiness(prev: GameHubData) {
+  return {
+    ...prev.playerData,
+    isPlayer1Ready: false,
+    isPlayer2Ready: false,
+  };
+}
+
+function setGamePhase(prev: GameHubData, phaseUpdate: Partial<GameHubData>): GameHubData {
+  return {
+    ...prev,
+    ...phaseUpdate,
+    playerData: resetPlayerReadiness(prev),
+  };
+}
