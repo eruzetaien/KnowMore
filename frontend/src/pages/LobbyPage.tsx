@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAllRoomsQuery, useCreateRoom } from "../hooks/useRoom";
 
-function LoginPage() {
+function LobbyPage() {
   const navigate = useNavigate();
 
   const { data: rooms, isLoading, isError, error } = useAllRoomsQuery();
@@ -75,4 +75,4 @@ function LoginPage() {
   );
 }
 
-export default LoginPage;
+export default LobbyPage;
