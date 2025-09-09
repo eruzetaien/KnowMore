@@ -3,22 +3,38 @@ import { useGameHub } from "../context/GameHubContext";
 import { useCreateSharedFact } from "../hooks/useFact";
 
 export default function ResultPhase() {
-  const { isLoading: hubLoading, resultPhaseData } = useGameHub();
+  const { isLoading: hubLoading, allPlayerData, resultPhaseData, setReadyStateForNextGame, room } = useGameHub();
   const [selectedRewardId, setSelectedRewardId] = useState<number | null>(null);
-  const { mutate: createSharedFact, isPending, isError: isCreateError, error: createError } = useCreateSharedFact();
+  const [submitted, setSubmitted] = useState(false);
+  const { mutate: createSharedFact, isPending, isError: isCreateError, error: createError } =
+    useCreateSharedFact();
+
+  const [ready, setReady] = useState(false);
 
   if (hubLoading) return <p>Loading hub connection...</p>;
 
   const handleChooseReward = () => {
     if (selectedRewardId !== null) {
-      createSharedFact(selectedRewardId);
+      createSharedFact(selectedRewardId, {
+        onSuccess: () => {
+          setSubmitted(true);
+        },
+      });
     }
+  };
+
+  const handleNextGame = () => {
+    const newState = !ready;
+    setReady(newState);
+    setReadyStateForNextGame(room.joinCode, newState)
   };
 
   const canChooseReward =
     resultPhaseData.isPlayerCorrect &&
     resultPhaseData.rewardStatements &&
     resultPhaseData.rewardStatements.length > 0;
+
+  const canGoNextGame = !canChooseReward || submitted; 
 
   return (
     <div>
@@ -27,10 +43,13 @@ export default function ResultPhase() {
         {resultPhaseData.isPlayerCorrect ? "You Are Correct!" : "You are Wrong~"}
       </h3>
 
-      {canChooseReward && (
+      {/* Reward choice flow */}
+      {canChooseReward && !submitted && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <p className="font-semibold">Choose one fact of your opponent that you want to save:</p>
+            <p className="font-semibold">
+              Choose one fact of your opponent that you want to save:
+            </p>
             {resultPhaseData.rewardStatements!.map((reward) => (
               <label
                 key={reward.id}
@@ -43,9 +62,7 @@ export default function ResultPhase() {
                   checked={selectedRewardId === reward.id}
                   onChange={() => setSelectedRewardId(reward.id)}
                 />
-                <span>
-                  {reward.description}
-                </span>
+                <span>{reward.description}</span>
               </label>
             ))}
           </div>
@@ -55,11 +72,64 @@ export default function ResultPhase() {
             disabled={selectedRewardId === null || isPending}
             className="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg shadow text-white font-semibold disabled:opacity-50"
           >
-              {isPending ? "Submitting..." : "Submit Reward Choice"}
+            {isPending ? "Submitting..." : "Submit Reward Choice"}
           </button>
 
-          {isCreateError && <p className="text-red-500">{createError.message}.</p>}
+          {isCreateError && (
+            <p className="text-red-500">{createError.message}.</p>
+          )}
         </div>
+      )}
+
+      {/* Next Game Button */}
+      {canGoNextGame && (
+        <div className="mt-6 space-y-4">
+          {submitted && (
+            <p className="text-green-400 font-semibold">
+              Reward submitted successfully 🎉
+            </p>
+          )}
+          
+          {/* Ready Button */}
+          <button
+            onClick={handleNextGame}
+            className={`w-full py-3 rounded-xl font-semibold transition ${
+              ready
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-red-600 hover:bg-red-700"
+            }`}
+          >
+            {ready ? "Cancel" : "Next Game"}
+          </button>
+
+          {/* Players */}
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="flex flex-col items-center p-4 bg-gray-800 rounded-xl">
+              <h2 className="font-semibold">Master</h2>
+              <p className="mt-2">{allPlayerData.player1 ?? "-"}</p>
+              <span
+                className={`text-xs mt-1 ${
+                  allPlayerData.isPlayer1Ready ? "text-green-400" : "text-red-400"
+                }`}
+              >
+                {allPlayerData.isPlayer1Ready ? "Ready" : "Not Ready"}
+              </span>
+
+            </div>
+
+            <div className="flex flex-col items-center p-4 bg-gray-800 rounded-xl">
+              <h2 className="font-semibold">Player 2</h2>
+              <p className="mt-2">{allPlayerData.player2 ?? "-"}</p>
+              <span
+                className={`text-xs mt-1 ${
+                  allPlayerData.isPlayer2Ready ? "text-green-400" : "text-red-400"
+                }`}
+              >
+                {allPlayerData.isPlayer2Ready ? "Ready" : "Not Ready"}
+              </span>
+            </div>
+          </div>
+        </div>        
       )}
     </div>
   );

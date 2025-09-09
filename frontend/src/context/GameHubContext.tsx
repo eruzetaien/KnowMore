@@ -25,6 +25,7 @@ type GameHubContextType = GameHubData & {
   sendEmoticon: (roomCode: string, emoticon: Emoticon) => Promise<void>;
   sendStatements: (roomCode: string, lie: string, factId1: number, factId2: number) => Promise<void>;
   sendAnswer:  (roomCode: string, answerIdx: number) => Promise<void>;
+  setReadyStateForNextGame: (roomCode: string, isReady: boolean) => Promise<void>;
 };
 
 const gameHubDataInit = {
@@ -206,6 +207,13 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [invokeWithConnection]
   );
 
+  const setReadyStateForNextGame = useCallback(
+    async (roomCode: string, isReady: boolean) => {
+      await invokeWithConnection("SendReadyStateForNextGame", {roomCode, isReady} );
+    },
+    [invokeWithConnection]
+  );
+
   useEffect(() => {
     return () => {
       disconnect();
@@ -214,7 +222,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   return (
     <GameHubContext.Provider
-      value={{ ...data, connect, disconnect, joinRoom, setReadyState, sendEmoticon, sendStatements, sendAnswer }}
+      value={{ ...data, connect, disconnect, joinRoom, setReadyState, sendEmoticon, sendStatements, sendAnswer, setReadyStateForNextGame }}
     >
       {children}
     </GameHubContext.Provider>

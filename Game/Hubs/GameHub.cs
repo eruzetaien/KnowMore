@@ -231,6 +231,41 @@ public class GameHub : Hub
         }
     }
 
+    public async Task SendReadyStateForNextGame(SetPlayerReadyStateRequest request)
+    {
+        long userId = GetUserId();
+
+        string gameKey = $"game:{request.RoomCode}";
+        GameData game = await GetEntity<GameData>(gameKey);
+        PlayerSlot playerSlot = game.GetPlayerSlot(userId);
+        if (playerSlot == PlayerSlot.Player1)
+        {
+            game.IsPlayer1Ready = true;
+        }
+        else if (playerSlot == PlayerSlot.Player2)
+        {
+            game.IsPlayer2Ready = true;
+        }
+        else
+            throw new HubException("You are not a participant in this game");
+
+        await UpdateEntity<GameData>(gameKey, game);
+
+        await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
+                new { game.IsPlayer1Ready, game.IsPlayer2Ready });
+
+        if (game.IsPlayer1Ready && game.IsPlayer2Ready)
+        {
+            game.IsPlayer1Ready = game.IsPlayer2Ready = false;
+            await UpdateEntity<GameData>(gameKey, game);
+
+            await Clients.User(game.Player1.ToString()).SendAsync("InitPreparationPhase",
+                new { });
+            await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
+                new { phase = GamePhase.Preparation });
+        }
+    }
+
     private long GetUserId()
     {
         string? sub = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
