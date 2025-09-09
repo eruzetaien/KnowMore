@@ -33,5 +33,6 @@ if (app.Environment.IsDevelopment())
 // Register endpoints
 app.RegisterFactGroupHandler();
 app.RegisterFactHandler();
+app.RegisterSharedFactHandler();
 
 app.Run();

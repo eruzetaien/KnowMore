@@ -10,6 +10,11 @@ export interface PlayerStatement {
   description: string
 }
 
+export interface RewardStatement {
+  id : number,
+  description: string
+}
+
 // Room Initial Data
 export interface InitRoomResponse {
   player1:number;
@@ -23,6 +28,7 @@ export interface InitPlayingPhaseResponse {
 }
 export interface InitResultPhaseResponse {
   isPlayerCorrect: boolean;
+  rewardStatements?: RewardStatement[];
 }
 
 
@@ -42,6 +48,4 @@ export interface PlayingPhaseData {
   playerAnswer: number;
 }
 
-export interface ResultPhaseData {
-  isPlayerCorrect: boolean;
-}
+export interface ResultPhaseData extends InitResultPhaseResponse {}

@@ -67,5 +67,13 @@ public class FactGroupDTO
         CreatedAt = factGroup.CreatedAt;
         UpdatedAt = factGroup.UpdatedAt;
     }
-    
+
+}
+
+public class ShareFactInfoDTO
+{
+    public  long FactId { get; set; }
+    public  long TargetUserId { get; set; }
+    public bool IsShared { get; set; }
+    public string? Description { get; set; }
 }

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
@@ -212,11 +213,19 @@ public class GameHub : Hub
             bool isPlayer1Correct = game.Player2Statements[game.Player1Answer] == 0;
             bool isPlayer2Correct = game.Player1Statements[game.Player2Answer] == 0;
 
+            var player1rewardStatement = isPlayer1Correct
+                ? await GetRewardStatements(game.Player2Statements, game.Player1)
+                : new List<object>();
+
+            var player2rewardStatement = isPlayer2Correct
+                ? await GetRewardStatements(game.Player1Statements, game.Player2)
+                : new List<object>();
+
             await Clients.User(game.Player1.ToString()).SendAsync("InitResultPhase",
-                new {isPlayerCorrect = isPlayer1Correct});
+                new { isPlayerCorrect = isPlayer1Correct, rewardStatements = player1rewardStatement });
             await Clients.User(game.Player2.ToString()).SendAsync("InitResultPhase",
-                new {isPlayerCorrect = isPlayer2Correct});
-            
+                new {isPlayerCorrect = isPlayer2Correct, rewardStatements = player2rewardStatement});
+
             await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
                 new { phase = GamePhase.Result });
         }
@@ -242,6 +251,35 @@ public class GameHub : Hub
         var fact = await response.Content.ReadFromJsonAsync<FactDTO>();
         return fact?.Description ?? "[Invalid Fact]";
     }
+
+    private async Task<List<object>> GetRewardStatements(
+    long[] statementIds,
+    long targetUserId)
+    {
+        var rewards = new List<object>();
+        var client = _httpClientFactory.CreateClient("FactService");
+
+        foreach (long statementId in statementIds)
+        {
+            if (statementId == 0)
+                continue;
+
+            var response = await client.GetAsync(
+                $"/internal/shared-facts/{statementId}/info?targetUserId={targetUserId}");
+
+            if (!response.IsSuccessStatusCode)
+                continue;
+
+            var factInfo = await response.Content.ReadFromJsonAsync<ShareFactInfoDTO>();
+            if (factInfo is { IsShared: false })
+            {
+                rewards.Add(new { id = statementId, factInfo.Description });
+            }
+        }
+
+        return rewards;
+    }
+
 
     private async Task<T> GetEntity<T>(string key)
     {
