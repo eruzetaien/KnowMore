@@ -122,7 +122,9 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     connection.on("InitResultPhase", (response: InitResultPhaseResponse) => {
-      console.log("InitResultPhase");
+      setData(prev => ({ ...prev,
+        resultPhaseData: {isPlayerCorrect: response.isPlayerCorrect}
+      }))
     });
 
     connection.on("SetGamePhase", (response: SetGamePhaseResponse) => {

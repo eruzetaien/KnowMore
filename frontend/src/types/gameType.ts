@@ -21,7 +21,9 @@ export interface InitPreparationPhaseResponse {}
 export interface InitPlayingPhaseResponse {
   opponentStatements: PlayerStatement[];
 }
-export interface InitResultPhaseResponse {}
+export interface InitResultPhaseResponse {
+  isPlayerCorrect: boolean;
+}
 
 
 export interface SetGamePhaseResponse {
@@ -40,4 +42,6 @@ export interface PlayingPhaseData {
   playerAnswer: number;
 }
 
-export interface ResultPhaseData {}
+export interface ResultPhaseData {
+  isPlayerCorrect: boolean;
+}

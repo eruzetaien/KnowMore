@@ -208,10 +208,15 @@ public class GameHub : Hub
             game.IsPlayer1Ready = game.IsPlayer2Ready = false;
             await UpdateEntity<GameData>(gameKey, game);
 
-            // TODO process result
-            await Clients.Group(request.RoomCode).SendAsync("InitResultPhase",
-                new {});
+            // Assess player answer
+            bool isPlayer1Correct = game.Player2Statements[game.Player1Answer] == 0;
+            bool isPlayer2Correct = game.Player1Statements[game.Player2Answer] == 0;
 
+            await Clients.User(game.Player1.ToString()).SendAsync("InitResultPhase",
+                new {isPlayerCorrect = isPlayer1Correct});
+            await Clients.User(game.Player2.ToString()).SendAsync("InitResultPhase",
+                new {isPlayerCorrect = isPlayer2Correct});
+            
             await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
                 new { phase = GamePhase.Result });
         }
