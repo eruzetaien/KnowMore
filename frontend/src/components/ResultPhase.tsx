@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { useGameHub } from "../context/GameHubContext";
+import { useCreateSharedFact } from "../hooks/useFact";
 
 export default function ResultPhase() {
   const { isLoading: hubLoading, resultPhaseData } = useGameHub();
   const [selectedRewardId, setSelectedRewardId] = useState<number | null>(null);
+  const { mutate: createSharedFact, isPending, isError: isCreateError, error: createError } = useCreateSharedFact();
 
   if (hubLoading) return <p>Loading hub connection...</p>;
 
   const handleChooseReward = () => {
     if (selectedRewardId !== null) {
-      console.log("Chosen reward id:", selectedRewardId);
-      // TODO: later send this ID to server / context update
+      createSharedFact(selectedRewardId);
     }
   };
 
@@ -51,11 +52,13 @@ export default function ResultPhase() {
 
           <button
             onClick={handleChooseReward}
-            disabled={selectedRewardId === null}
+            disabled={selectedRewardId === null || isPending}
             className="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg shadow text-white font-semibold disabled:opacity-50"
           >
-            Submit Reward Choice
+              {isPending ? "Submitting..." : "Submit Reward Choice"}
           </button>
+
+          {isCreateError && <p className="text-red-500">{createError.message}.</p>}
         </div>
       )}
     </div>
