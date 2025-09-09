@@ -58,7 +58,7 @@ public class GameHub : Hub
         await Clients.Group(request.RoomCode).SendAsync("InitRoom", new {room.Player1, room.Player2});
     }
     
-    public async Task SetPlayerReadyState(SetPlayerReadyStateRequest request)
+    public async Task SetReadyStateToStartGame(SetPlayerReadyStateRequest request)
     {
         long userId = GetUserId();
 

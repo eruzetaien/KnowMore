@@ -4,7 +4,7 @@ import { useGameHub } from "../context/GameHubContext";
 
 function RoomPage() {
   const { roomCode } = useParams();
-  const { room, allPlayerData, isLoading, joinRoom, setReadyState } = useGameHub();
+  const { room, allPlayerData, isLoading, joinRoom, setReadyStateToStartGame } = useGameHub();
 
   const [ready, setReady] = useState(false);
 
@@ -17,7 +17,7 @@ function RoomPage() {
   const handleReadyClick = () => {
     const newState = !ready;
     setReady(newState);
-    setReadyState(room.joinCode, newState); // if GameHub provides ready state update
+    setReadyStateToStartGame(room.joinCode, newState); // if GameHub provides ready state update
   };
 
   const navigate = useNavigate();
