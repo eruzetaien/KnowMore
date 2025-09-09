@@ -51,6 +51,19 @@ namespace Fact.Migrations
                     b.ToTable("FactGroups");
                 });
 
+            modelBuilder.Entity("SharedFact", b =>
+                {
+                    b.Property<long>("FactId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("FactId", "UserId");
+
+                    b.ToTable("SharedFacts");
+                });
+
             modelBuilder.Entity("UserFact", b =>
                 {
                     b.Property<long>("Id")
@@ -80,6 +93,17 @@ namespace Fact.Migrations
                     b.HasIndex("FactGroupId");
 
                     b.ToTable("Facts");
+                });
+
+            modelBuilder.Entity("SharedFact", b =>
+                {
+                    b.HasOne("UserFact", "Fact")
+                        .WithMany()
+                        .HasForeignKey("FactId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Fact");
                 });
 
             modelBuilder.Entity("UserFact", b =>

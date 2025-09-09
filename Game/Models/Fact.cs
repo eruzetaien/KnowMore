@@ -22,3 +22,11 @@ public class FactGroup
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
+
+public class SharedFact
+{
+    public required long FactId { get; set; }
+    public UserFact Fact { get; set; } = null!;
+
+    public required long UserId { get; set; } 
+}
