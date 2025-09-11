@@ -62,5 +62,10 @@ public class SendStatementsRequest()
 public class SendAnswerRequest()
 {
     public string RoomCode { get; set; } = string.Empty;
-    public int answerIdx { get; set;} 
+    public int answerIdx { get; set; }
+}
+
+public class SendRewardChoiceRequest()
+{
+    public long factId { get; set;} 
 }

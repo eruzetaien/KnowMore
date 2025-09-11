@@ -1,13 +1,10 @@
 import { useState } from "react";
 import { useGameHub } from "../context/GameHubContext";
-import { useCreateSharedFact } from "../hooks/useFact";
 
 export default function ResultPhase() {
-  const { isLoading: hubLoading, allPlayerData, resultPhaseData, setReadyStateForNextGame, room } = useGameHub();
+  const { isLoading: hubLoading, allPlayerData, resultPhaseData, setReadyStateForNextGame, sendRewardChoice, room } = useGameHub();
   const [selectedRewardId, setSelectedRewardId] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const { mutate: createSharedFact, isPending, isError: isCreateError, error: createError } =
-    useCreateSharedFact();
 
   const [ready, setReady] = useState(false);
 
@@ -15,11 +12,8 @@ export default function ResultPhase() {
 
   const handleChooseReward = () => {
     if (selectedRewardId !== null) {
-      createSharedFact(selectedRewardId, {
-        onSuccess: () => {
-          setSubmitted(true);
-        },
-      });
+      sendRewardChoice(selectedRewardId);
+      setSubmitted(true);
     }
   };
 
@@ -69,15 +63,11 @@ export default function ResultPhase() {
 
           <button
             onClick={handleChooseReward}
-            disabled={selectedRewardId === null || isPending}
+            disabled={selectedRewardId === null}
             className="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg shadow text-white font-semibold disabled:opacity-50"
           >
-            {isPending ? "Submitting..." : "Submit Reward Choice"}
+            {"Submit Reward Choice"}
           </button>
-
-          {isCreateError && (
-            <p className="text-red-500">{createError.message}.</p>
-          )}
         </div>
       )}
 

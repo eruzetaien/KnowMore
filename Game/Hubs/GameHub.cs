@@ -261,6 +261,20 @@ public class GameHub : Hub
                 new { phase = GamePhase.Result });
         }
     }
+    
+    public async Task SendRewardChoice(SendRewardChoiceRequest request)
+    {
+        long userId = GetUserId();
+        bool exists = await _db.SharedFacts
+                .AnyAsync(sf => sf.FactId == request.factId && sf.UserId == userId);
+
+        if (exists)
+            return;
+
+        SharedFact sharedFact = new() { FactId = request.factId, UserId = userId };
+        _db.SharedFacts.Add(sharedFact);
+        await _db.SaveChangesAsync();
+    }
 
     public async Task SendReadyStateForNextGame(SetPlayerReadyStateRequest request)
     {
@@ -298,7 +312,7 @@ public class GameHub : Hub
 
             await Clients.User(game.Player2.ToString()).SendAsync("InitPreparationPhase",
                 new { playerFacts = player2Facts });
-                
+
             await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
                 new { phase = GamePhase.Preparation });
         }
@@ -337,25 +351,23 @@ public class GameHub : Hub
     long[] statementIds,
     long targetUserId)
     {
-        var rewards = new List<object>();
+        List<object> rewards = [];
         var client = _httpClientFactory.CreateClient("FactService");
 
-        foreach (long statementId in statementIds)
+        foreach (long factId in statementIds)
         {
-            if (statementId == 0)
+            if (factId == 0)
                 continue;
 
-            var response = await client.GetAsync(
-                $"/internal/shared-facts/{statementId}/info?targetUserId={targetUserId}");
+            UserFact? fact = await _db.Facts.FindAsync(factId);
+            if (fact == null)
+                throw new KeyNotFoundException($"Fact with id {factId} is not found");
 
-            if (!response.IsSuccessStatusCode)
-                continue;
+            bool alreadyShared = await _db.SharedFacts
+                .AnyAsync(sf => sf.FactId == factId && sf.UserId == targetUserId);
 
-            var factInfo = await response.Content.ReadFromJsonAsync<ShareFactInfoDTO>();
-            if (factInfo is { IsShared: false })
-            {
-                rewards.Add(new { id = statementId, factInfo.Description });
-            }
+            if (!alreadyShared)
+                rewards.Add(new { id = factId, fact.Description });
         }
 
         return rewards;
