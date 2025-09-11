@@ -207,11 +207,15 @@ public class GameHub : Hub
         if (game.IsPlayer1Ready && game.IsPlayer2Ready)
         {
             game.IsPlayer1Ready = game.IsPlayer2Ready = false;
-            await UpdateEntity<GameData>(gameKey, game);
 
             // Assess player answer
             bool isPlayer1Correct = game.Player2Statements[game.Player1Answer] == 0;
             bool isPlayer2Correct = game.Player1Statements[game.Player2Answer] == 0;
+
+            game.Player1Score += isPlayer1Correct? 1:0;
+            game.Player2Score += isPlayer2Correct? 1:0;
+
+            await UpdateEntity<GameData>(gameKey, game);
 
             var player1rewardStatement = isPlayer1Correct
                 ? await GetRewardStatements(game.Player2Statements, game.Player1)
@@ -222,9 +226,21 @@ public class GameHub : Hub
                 : new List<object>();
 
             await Clients.User(game.Player1.ToString()).SendAsync("InitResultPhase",
-                new { isPlayerCorrect = isPlayer1Correct, rewardStatements = player1rewardStatement });
+                new
+                {
+                    isPlayerCorrect = isPlayer1Correct,
+                    rewardStatements = player1rewardStatement,
+                    player1Score = game.Player1Score,
+                    player2Score = game.Player2Score,
+                });
             await Clients.User(game.Player2.ToString()).SendAsync("InitResultPhase",
-                new {isPlayerCorrect = isPlayer2Correct, rewardStatements = player2rewardStatement});
+                new
+                {
+                    isPlayerCorrect = isPlayer2Correct,
+                    rewardStatements = player2rewardStatement,
+                    player1Score = game.Player1Score,
+                    player2Score = game.Player2Score,
+                });
 
             await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
                 new { phase = GamePhase.Result });

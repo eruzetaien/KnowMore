@@ -124,7 +124,13 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     connection.on("InitResultPhase", (response: InitResultPhaseResponse) => {
       setData(prev => ({ ...prev,
-        resultPhaseData: response
+        resultPhaseData: { 
+          isPlayerCorrect : response.isPlayerCorrect,
+          rewardStatements : response.rewardStatements
+        },
+        allPlayerData: {...prev.allPlayerData, 
+          player1Score : response.player1Score, player2Score: response.player2Score
+        }
       }))
     });
 

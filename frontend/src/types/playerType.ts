@@ -22,6 +22,8 @@ export interface AllPlayerData {
   isPlayer2Ready: boolean;
   player1Emot: Emoticon;
   player2Emot: Emoticon;
+  player1Score: number;
+  player2Score: number;
 }
 
 // Hub DTO
