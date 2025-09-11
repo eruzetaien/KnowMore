@@ -1,17 +1,13 @@
 import { useState } from "react";
-import { useAllUserFactQuery } from "../hooks/useFact";
 import { useGameHub } from "../context/GameHubContext";
 
 export default function PreparationPhase() {
-  const { allPlayerData, isLoading: hubLoading, sendStatements, room } = useGameHub();
-  const { data: factGroups, isLoading: factLoading, error } = useAllUserFactQuery();
+  const { allPlayerData, isLoading: hubLoading, sendStatements, room, preparationPhaseData } = useGameHub();
 
   const [selectedFacts, setSelectedFacts] = useState<number[]>([]);
   const [lie, setLie] = useState("");
 
   if (hubLoading) return <p>Loading hub connection...</p>;
-  if (factLoading) return <p>Loading fact groups...</p>;
-  if (error) return <p>Failed to load fact groups</p>;
 
   const handleFactSelect = (factId: number) => {
     setSelectedFacts((prev) => {
@@ -42,9 +38,9 @@ export default function PreparationPhase() {
       <p>Player 2 Ready: {allPlayerData.isPlayer2Ready ? "✅" : "❌"}</p>
 
       <h3 className="text-lg font-semibold mt-4">Your Fact Groups</h3>
-      {factGroups?.length ? (
+      {preparationPhaseData.playerFacts?.length ? (
         <ul className="space-y-2 mt-2">
-          {factGroups.map((group) => (
+          {preparationPhaseData.playerFacts.map((group) => (
             <li key={group.id} className="p-3 bg-gray-700 rounded-lg shadow">
               <p className="font-medium">{group.name}</p>
               <ul className="ml-4 mt-1 list-disc text-sm">

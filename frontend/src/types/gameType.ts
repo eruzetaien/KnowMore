@@ -1,7 +1,10 @@
+import type { FactGroupForGame } from "./factType";
+
 export const GamePhase = {
-  Preparation: 0,
-  Playing: 1,
-  Result: 2,
+  None: 0,
+  Preparation: 1,
+  Playing: 2,
+  Result: 3,
 } as const;
 export type GamePhase = (typeof GamePhase)[keyof typeof GamePhase];
 
@@ -22,7 +25,9 @@ export interface InitRoomResponse {
 }
 
 // Game Phase Initial Data
-export interface InitPreparationPhaseResponse {}
+export interface InitPreparationPhaseResponse {
+  playerFacts : FactGroupForGame[];
+}
 export interface InitPlayingPhaseResponse {
   opponentStatements: PlayerStatement[];
 }
@@ -41,7 +46,7 @@ export interface GameData {
   phase: GamePhase;
 }
 
-export interface PreparationPhaseData {}
+export interface PreparationPhaseData extends InitPreparationPhaseResponse {}
 
 export interface PlayingPhaseData {
   opponentStatements: PlayerStatement[];

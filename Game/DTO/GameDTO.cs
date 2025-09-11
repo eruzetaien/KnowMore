@@ -28,9 +28,10 @@ public enum Emoticon
 
 public enum GamePhase
 {
-    Preparation = 0,
-    Playing = 1,
-    Result = 2,
+    None = 0,
+    Preparation = 1,
+    Playing = 2,
+    Result = 3,
 }
 
 public class JoinRoomRequest()

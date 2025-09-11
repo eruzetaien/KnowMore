@@ -1,8 +1,9 @@
-using System.Net;
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
 using StackExchange.Redis;
+using Microsoft.EntityFrameworkCore;
+
 
 
 public class GameHub : Hub
@@ -10,13 +11,19 @@ public class GameHub : Hub
 
     private readonly IConnectionMultiplexer _redis;
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ILogger _logger;
+    private readonly ILogger<GameHub> _logger;
+    private readonly FactDb _db; // Add your DbContext here
 
-    public GameHub(IConnectionMultiplexer redis, IHttpClientFactory httpClientFactory, ILogger<GameHub> logger)
+    public GameHub(
+        IConnectionMultiplexer redis,
+        IHttpClientFactory httpClientFactory,
+        ILogger<GameHub> logger,
+        FactDb db)
     {
         _redis = redis;
         _httpClientFactory = httpClientFactory;
         _logger = logger;
+        _db = db;
     }
 
     public override async Task OnConnectedAsync()
@@ -93,8 +100,16 @@ public class GameHub : Hub
             IDatabase db = _redis.GetDatabase();
             await db.StringSetAsync(gameKey, gameJson, TimeSpan.FromMinutes(ttlInMinutes));
             await db.KeyDeleteAsync(roomKey);
+
+            List<FactGroupDTO> player1Facts = await GetAllPlayerFact(game.Player1);
+            List<FactGroupDTO> player2Facts = await GetAllPlayerFact(game.Player2);
+
             await Clients.User(game.Player1.ToString()).SendAsync("InitPreparationPhase",
-                new { });
+                new { playerFacts = player1Facts });
+
+            await Clients.User(game.Player2.ToString()).SendAsync("InitPreparationPhase",
+                new { playerFacts = player2Facts });
+
             await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
                 new { phase = GamePhase.Preparation });
         }
@@ -152,7 +167,7 @@ public class GameHub : Hub
                 if (id == 0)
                     desc = game.Player1Lie;
                 else
-                    desc = await FetchFactDescription(id);
+                    desc = await GetFactDescription(id);
                 player1Statements.Add(new { idx=i, description=desc });
             }
             // Send Player 1 statement to Player 2, its opponent
@@ -167,7 +182,7 @@ public class GameHub : Hub
                 if (id == 0)
                     desc = game.Player2Lie;
                 else
-                    desc = await FetchFactDescription(id);
+                    desc = await GetFactDescription(id);
                 player2Statements.Add(new { idx=i, description=desc });
             }
             // Send Player 2 statement to Player 1, its opponent
@@ -275,8 +290,15 @@ public class GameHub : Hub
             game.IsPlayer1Ready = game.IsPlayer2Ready = false;
             await UpdateEntity<GameData>(gameKey, game);
 
+            List<FactGroupDTO> player1Facts = await GetAllPlayerFact(game.Player1);
+            List<FactGroupDTO> player2Facts = await GetAllPlayerFact(game.Player2);
+
             await Clients.User(game.Player1.ToString()).SendAsync("InitPreparationPhase",
-                new { });
+                new { playerFacts = player1Facts });
+
+            await Clients.User(game.Player2.ToString()).SendAsync("InitPreparationPhase",
+                new { playerFacts = player2Facts });
+                
             await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
                 new { phase = GamePhase.Preparation });
         }
@@ -292,15 +314,23 @@ public class GameHub : Hub
     }
 
     
-    private async Task<string> FetchFactDescription(long id)
+    private async Task<string> GetFactDescription(long id)
     {
-        HttpClient client = _httpClientFactory.CreateClient("FactService");
-        var response = await client.GetAsync($"/internal/facts/{id}");
-        if (!response.IsSuccessStatusCode)
-            return "[Fact not found]";
+        UserFact? fact = await _db.Facts.FirstOrDefaultAsync(u => u.Id == id);
+        if (fact == null)
+            throw new KeyNotFoundException($"Fact with id {id} is not found");
 
-        var fact = await response.Content.ReadFromJsonAsync<FactDTO>();
-        return fact?.Description ?? "[Invalid Fact]";
+        return fact.Description;
+    }
+
+    private async Task<List<FactGroupDTO>> GetAllPlayerFact(long userId)
+    {
+        List<FactGroup> factGroups = await _db.FactGroups
+                .Include(g => g.Facts)
+                .Where(g => g.UserId == userId)
+                .ToListAsync();
+
+        return factGroups.Select(g => new FactGroupDTO(g)).ToList();
     }
 
     private async Task<List<object>> GetRewardStatements(

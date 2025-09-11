@@ -86,19 +86,6 @@ public static class FactHandler
         })
         .RequireAuthorization();
 
-        app.MapGet("/internal/facts/{id}", async (HttpContext context, long id, FactDb db) =>
-        {
-            if (!context.Request.Headers.TryGetValue("X-API-KEY", out var key) || key != Environment.GetEnvironmentVariable("API_KEY"))
-                return Results.Unauthorized();  
-
-            var fact = await db.Facts.FirstOrDefaultAsync(u => u.Id == id);
-            if (fact == null)
-                return Results.NotFound("Fact does not exist.");
-
-            return Results.Ok(new FactDTO(fact, isOwner: false));
-        });
-
-
         return app;
     }
 }

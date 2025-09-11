@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-class FactDb : DbContext
+public class FactDb : DbContext
 {
     public FactDb(DbContextOptions<FactDb> options)
         : base(options) { }

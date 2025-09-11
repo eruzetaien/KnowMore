@@ -34,8 +34,8 @@ const gameHubDataInit = {
   isLoading: false,   
   playerData: {} as PlayerData,
   allPlayerData: {} as AllPlayerData,
-  game: {phase: GamePhase.Preparation} as GameData,
-  preparationPhaseData: {isPlayer1Ready:false, isPlayer2Ready:false} as PreparationPhaseData,
+  game: {phase: GamePhase.None} as GameData,
+  preparationPhaseData: {} as PreparationPhaseData,
   playingPhaseData: {} as PlayingPhaseData,
   resultPhaseData: {} as ResultPhaseData,
 }
@@ -110,7 +110,9 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     connection.on("InitPreparationPhase", (response: InitPreparationPhaseResponse) => {
-      console.log("InitPreparationPhase");
+      setData(prev => ({...prev,
+        preparationPhaseData : response
+      }));
     });
 
     connection.on("InitPlayingPhase", (response: InitPlayingPhaseResponse) => {
