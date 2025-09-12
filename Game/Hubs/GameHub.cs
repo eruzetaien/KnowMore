@@ -92,39 +92,22 @@ public class GameHub : Hub
 
         if (room.HasGameStarted)
         {
-            string gameKey = $"game:{room.JoinCode}";
-            GameData game = new() { RoomCode = room.JoinCode, Player1 = room.Player1, Player2 = room.Player2 };
-            string gameJson = JsonSerializer.Serialize(game);
-
-            int ttlInMinutes = 30;
-            IDatabase db = _redis.GetDatabase();
-            await db.StringSetAsync(gameKey, gameJson, TimeSpan.FromMinutes(ttlInMinutes));
-            await db.KeyDeleteAsync(roomKey);
-
-            List<FactGroupDTO> player1Facts = await GetAllPlayerFact(game.Player1);
-            List<FactGroupDTO> player2Facts = await GetAllPlayerFact(game.Player2);
-
-            await Clients.User(game.Player1.ToString()).SendAsync("InitPreparationPhase",
-                new { playerFacts = player1Facts });
-
-            await Clients.User(game.Player2.ToString()).SendAsync("InitPreparationPhase",
-                new { playerFacts = player2Facts });
-
-            await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
-                new { phase = GamePhase.Preparation });
+            GameData game = await CreateGameData(room, roomKey);
+            string gameKey = $"game:{game.RoomCode}";
+            await InitPreparationPhase(game, gameKey);
         }
     }
 
     public async Task SendEmoticon(SendEmoticonRequest request)
     {
         long userId = GetUserId();
-        
+
         string gameKey = $"game:{request.RoomCode}";
         GameData game = await GetEntity<GameData>(gameKey);
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
 
         await Clients.Group(request.RoomCode).SendAsync("ReceiveEmoticon",
-            new { Sender = playerSlot, Emoticon = request.Emoticon });   
+            new { Sender = playerSlot, Emoticon = request.Emoticon });
     }
 
     public async Task SendStatements(SendStatementsRequest request)
@@ -155,43 +138,7 @@ public class GameHub : Hub
                 new { game.IsPlayer1Ready, game.IsPlayer2Ready });
 
         if (game.IsPlayer1Ready && game.IsPlayer2Ready)
-        {
-            game.IsPlayer1Ready = game.IsPlayer2Ready = false;
-            await UpdateEntity<GameData>(gameKey, game);
-
-            var player1Statements = new List<Object>();
-            for (int i = 0; i < game.Player1Statements.Length; i++)
-            {
-                long id = game.Player1Statements[i];
-                string desc;
-                if (id == 0)
-                    desc = game.Player1Lie;
-                else
-                    desc = await GetFactDescription(id);
-                player1Statements.Add(new { idx=i, description=desc });
-            }
-            // Send Player 1 statement to Player 2, its opponent
-            await Clients.User(game.Player2.ToString()).SendAsync("InitPlayingPhase",
-                new { OpponentStatements = player1Statements });
-
-            var player2Statements = new List<Object>();
-            for (int i = 0; i < game.Player2Statements.Length; i++)
-            {
-                long id = game.Player2Statements[i];
-                string desc;
-                if (id == 0)
-                    desc = game.Player2Lie;
-                else
-                    desc = await GetFactDescription(id);
-                player2Statements.Add(new { idx=i, description=desc });
-            }
-            // Send Player 2 statement to Player 1, its opponent
-            await Clients.User(game.Player1.ToString()).SendAsync("InitPlayingPhase",
-                new { OpponentStatements = player2Statements });
-
-            await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
-                new { phase = GamePhase.Playing });
-        }
+            await InitPlayingPhase(game, gameKey);
     }
 
     public async Task SendAnswer(SendAnswerRequest request)
@@ -220,46 +167,7 @@ public class GameHub : Hub
                 new { game.IsPlayer1Ready, game.IsPlayer2Ready });
 
         if (game.IsPlayer1Ready && game.IsPlayer2Ready)
-        {
-            game.IsPlayer1Ready = game.IsPlayer2Ready = false;
-
-            // Assess player answer
-            bool isPlayer1Correct = game.Player2Statements[game.Player1Answer] == 0;
-            bool isPlayer2Correct = game.Player1Statements[game.Player2Answer] == 0;
-
-            game.Player1Score += isPlayer1Correct? 1:0;
-            game.Player2Score += isPlayer2Correct? 1:0;
-
-            await UpdateEntity<GameData>(gameKey, game);
-
-            var player1rewardStatement = isPlayer1Correct
-                ? await GetRewardStatements(game.Player2Statements, game.Player1)
-                : new List<object>();
-
-            var player2rewardStatement = isPlayer2Correct
-                ? await GetRewardStatements(game.Player1Statements, game.Player2)
-                : new List<object>();
-
-            await Clients.User(game.Player1.ToString()).SendAsync("InitResultPhase",
-                new
-                {
-                    isPlayerCorrect = isPlayer1Correct,
-                    rewardStatements = player1rewardStatement,
-                    player1Score = game.Player1Score,
-                    player2Score = game.Player2Score,
-                });
-            await Clients.User(game.Player2.ToString()).SendAsync("InitResultPhase",
-                new
-                {
-                    isPlayerCorrect = isPlayer2Correct,
-                    rewardStatements = player2rewardStatement,
-                    player1Score = game.Player1Score,
-                    player2Score = game.Player2Score,
-                });
-
-            await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
-                new { phase = GamePhase.Result });
-        }
+            await InitResultPhase(game, gameKey);
     }
     
     public async Task SendRewardChoice(SendRewardChoiceRequest request)
@@ -300,22 +208,120 @@ public class GameHub : Hub
                 new { game.IsPlayer1Ready, game.IsPlayer2Ready });
 
         if (game.IsPlayer1Ready && game.IsPlayer2Ready)
+            await InitPreparationPhase(game, gameKey);
+    }
+    
+    private async Task<GameData> CreateGameData(Room room, string roomKey)
+    {
+        string gameKey = $"game:{room.JoinCode}";
+        GameData game = new() { RoomCode = room.JoinCode, Player1 = room.Player1, Player2 = room.Player2 };
+        string gameJson = JsonSerializer.Serialize(game);
+
+        int ttlInMinutes = 30;
+        IDatabase db = _redis.GetDatabase();
+        await db.StringSetAsync(gameKey, gameJson, TimeSpan.FromMinutes(ttlInMinutes));
+        await db.KeyDeleteAsync(roomKey);
+
+        return game;
+    }
+
+    private async Task InitPreparationPhase(GameData game, string gameKey)
+    { 
+        game.IsPlayer1Ready = game.IsPlayer2Ready = false;
+        await UpdateEntity<GameData>(gameKey, game);
+
+        List<FactGroupDTO> player1Facts = await GetAllPlayerFact(game.Player1);
+        List<FactGroupDTO> player2Facts = await GetAllPlayerFact(game.Player2);
+
+        await Clients.User(game.Player1.ToString()).SendAsync("InitPreparationPhase",
+            new { playerFacts = player1Facts });
+
+        await Clients.User(game.Player2.ToString()).SendAsync("InitPreparationPhase",
+            new { playerFacts = player2Facts });
+
+        await Clients.Group(game.RoomCode).SendAsync("SetGamePhase",
+            new { phase = GamePhase.Preparation });
+    }
+
+    private async Task InitPlayingPhase(GameData game, string gameKey)
+    {
+        game.IsPlayer1Ready = game.IsPlayer2Ready = false;
+        await UpdateEntity<GameData>(gameKey, game);
+
+        var player1Statements = new List<Object>();
+        for (int i = 0; i < game.Player1Statements.Length; i++)
         {
-            game.IsPlayer1Ready = game.IsPlayer2Ready = false;
-            await UpdateEntity<GameData>(gameKey, game);
-
-            List<FactGroupDTO> player1Facts = await GetAllPlayerFact(game.Player1);
-            List<FactGroupDTO> player2Facts = await GetAllPlayerFact(game.Player2);
-
-            await Clients.User(game.Player1.ToString()).SendAsync("InitPreparationPhase",
-                new { playerFacts = player1Facts });
-
-            await Clients.User(game.Player2.ToString()).SendAsync("InitPreparationPhase",
-                new { playerFacts = player2Facts });
-
-            await Clients.Group(request.RoomCode).SendAsync("SetGamePhase",
-                new { phase = GamePhase.Preparation });
+            long id = game.Player1Statements[i];
+            string desc;
+            if (id == 0)
+                desc = game.Player1Lie;
+            else
+                desc = await GetFactDescription(id);
+            player1Statements.Add(new { idx = i, description = desc });
         }
+        // Send Player 1 statement to Player 2, its opponent
+        await Clients.User(game.Player2.ToString()).SendAsync("InitPlayingPhase",
+            new { OpponentStatements = player1Statements });
+
+        var player2Statements = new List<Object>();
+        for (int i = 0; i < game.Player2Statements.Length; i++)
+        {
+            long id = game.Player2Statements[i];
+            string desc;
+            if (id == 0)
+                desc = game.Player2Lie;
+            else
+                desc = await GetFactDescription(id);
+            player2Statements.Add(new { idx = i, description = desc });
+        }
+        // Send Player 2 statement to Player 1, its opponent
+        await Clients.User(game.Player1.ToString()).SendAsync("InitPlayingPhase",
+            new { OpponentStatements = player2Statements });
+
+        await Clients.Group(game.RoomCode).SendAsync("SetGamePhase",
+            new { phase = GamePhase.Playing });
+    }
+
+    private async Task InitResultPhase(GameData game, string gameKey)
+    { 
+        game.IsPlayer1Ready = game.IsPlayer2Ready = false;
+
+        // Assess player answer
+        bool isPlayer1Correct = game.Player2Statements[game.Player1Answer] == 0;
+        bool isPlayer2Correct = game.Player1Statements[game.Player2Answer] == 0;
+
+        game.Player1Score += isPlayer1Correct ? 1 : 0;
+        game.Player2Score += isPlayer2Correct ? 1 : 0;
+
+        await UpdateEntity<GameData>(gameKey, game);
+
+        var player1rewardStatement = isPlayer1Correct
+            ? await GetRewardStatements(game.Player2Statements, game.Player1)
+            : new List<object>();
+
+        var player2rewardStatement = isPlayer2Correct
+            ? await GetRewardStatements(game.Player1Statements, game.Player2)
+            : new List<object>();
+
+        await Clients.User(game.Player1.ToString()).SendAsync("InitResultPhase",
+            new
+            {
+                isPlayerCorrect = isPlayer1Correct,
+                rewardStatements = player1rewardStatement,
+                player1Score = game.Player1Score,
+                player2Score = game.Player2Score,
+            });
+        await Clients.User(game.Player2.ToString()).SendAsync("InitResultPhase",
+            new
+            {
+                isPlayerCorrect = isPlayer2Correct,
+                rewardStatements = player2rewardStatement,
+                player1Score = game.Player1Score,
+                player2Score = game.Player2Score,
+            });
+
+        await Clients.Group(game.RoomCode).SendAsync("SetGamePhase",
+            new { phase = GamePhase.Result });
     }
 
     private long GetUserId()
