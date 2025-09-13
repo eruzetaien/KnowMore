@@ -9,6 +9,7 @@ public class FactDTO
         Id = fact.Id;
         Description = fact.Description;
     }
+    public FactDTO() { }
 }
 
 public class FactGroupDTO
@@ -23,7 +24,7 @@ public class FactGroupDTO
         Name = factGroup.Name;
         Facts = factGroup.Facts.Select(f => new FactDTO(f)).ToList();
     }
-
+    public FactGroupDTO() {}
 }
 
 public class ShareFactInfoDTO

@@ -228,16 +228,22 @@ public class GameHub : Hub
     private async Task InitPreparationPhase(GameData game, string gameKey)
     { 
         game.IsPlayer1Ready = game.IsPlayer2Ready = false;
+
+        if (game.Player1Facts.Count <= 0)
+            game.Player1Facts = await GetAllPlayerFact(game.Player1);
+        else
+            _logger.LogInformation("Use data in cache");
+
+        if (game.Player2Facts.Count <= 0)
+            game.Player2Facts = await GetAllPlayerFact(game.Player2);
+
         await UpdateEntity<GameData>(gameKey, game);
 
-        List<FactGroupDTO> player1Facts = await GetAllPlayerFact(game.Player1);
-        List<FactGroupDTO> player2Facts = await GetAllPlayerFact(game.Player2);
-
         await Clients.User(game.Player1.ToString()).SendAsync("InitPreparationPhase",
-            new { playerFacts = player1Facts });
+            new { playerFacts = game.Player1Facts });
 
         await Clients.User(game.Player2.ToString()).SendAsync("InitPreparationPhase",
-            new { playerFacts = player2Facts });
+            new { playerFacts = game.Player2Facts });
 
         await Clients.Group(game.RoomCode).SendAsync("SetGamePhase",
             new { phase = GamePhase.Preparation });

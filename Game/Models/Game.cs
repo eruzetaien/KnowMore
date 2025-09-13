@@ -34,7 +34,9 @@ public class GameData : HasPlayersBase
     public int Player1Answer { get; set; }
     public int Player2Answer { get; set; }
     public int Player1Score { get; set; }
-    public int Player2Score { get; set; } 
+    public int Player2Score { get; set; }
     public bool IsPlayer1Ready { get; set; }
     public bool IsPlayer2Ready { get; set; }
+    public List<FactGroupDTO> Player1Facts { get; set; } = [];
+    public List<FactGroupDTO> Player2Facts { get; set; } = [];
 }
