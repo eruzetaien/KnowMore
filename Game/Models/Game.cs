@@ -39,4 +39,5 @@ public class GameData : HasPlayersBase
     public bool IsPlayer2Ready { get; set; }
     public List<FactGroupDTO> Player1Facts { get; set; } = [];
     public List<FactGroupDTO> Player2Facts { get; set; } = [];
+    public Dictionary<long, string> PlayerFactDescriptionMap { get; set; } = [];
 }

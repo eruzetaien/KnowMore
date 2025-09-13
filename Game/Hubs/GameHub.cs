@@ -230,12 +230,18 @@ public class GameHub : Hub
         game.IsPlayer1Ready = game.IsPlayer2Ready = false;
 
         if (game.Player1Facts.Count <= 0)
+        { 
             game.Player1Facts = await GetAllPlayerFact(game.Player1);
-        else
-            _logger.LogInformation("Use data in cache");
+            foreach (FactDTO fact in game.Player1Facts.SelectMany(g => g.Facts))
+                game.PlayerFactDescriptionMap.Add(fact.Id, fact.Description);
+        }
 
         if (game.Player2Facts.Count <= 0)
+        { 
             game.Player2Facts = await GetAllPlayerFact(game.Player2);
+            foreach (FactDTO fact in game.Player2Facts.SelectMany(g => g.Facts))
+                game.PlayerFactDescriptionMap.Add(fact.Id, fact.Description);
+        }
 
         await UpdateEntity<GameData>(gameKey, game);
 
@@ -262,7 +268,7 @@ public class GameHub : Hub
             if (id == 0)
                 desc = game.Player1Lie;
             else
-                desc = await GetFactDescription(id);
+                desc = game.PlayerFactDescriptionMap[id];
             player1Statements.Add(new { idx = i, description = desc });
         }
         // Send Player 1 statement to Player 2, its opponent
@@ -277,7 +283,7 @@ public class GameHub : Hub
             if (id == 0)
                 desc = game.Player2Lie;
             else
-                desc = await GetFactDescription(id);
+                desc = game.PlayerFactDescriptionMap[id];
             player2Statements.Add(new { idx = i, description = desc });
         }
         // Send Player 2 statement to Player 1, its opponent
@@ -337,16 +343,6 @@ public class GameHub : Hub
             throw new HubException("Unauthorized: missing claim");
 
         return long.Parse(sub);
-    }
-
-    
-    private async Task<string> GetFactDescription(long id)
-    {
-        UserFact? fact = await _db.Facts.FirstOrDefaultAsync(u => u.Id == id);
-        if (fact == null)
-            throw new KeyNotFoundException($"Fact with id {id} is not found");
-
-        return fact.Description;
     }
 
     private async Task<List<FactGroupDTO>> GetAllPlayerFact(long userId)
