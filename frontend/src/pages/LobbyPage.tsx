@@ -23,7 +23,7 @@ function LobbyPage() {
   }, [createdRoom, navigate]);
 
   return (
-    <div className="flex flex-col items-center gap-6 w-screens mx-auto mt-10">
+    <div className="flex flex-col items-center gap-6 w-screens mx-auto">
       {/* Create Room */}
       <div className="flex flex-col gap-3">
         <h2 className="text-lg font-bold">Create a Room</h2>
