@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState} from "react";
+import { useAllRoomsQuery} from "../hooks/useRoom";
+import CreateRoomModal from "../components/CreateRoomModal";
 import { useNavigate } from "react-router-dom";
-import { useAllRoomsQuery, useCreateRoom } from "../hooks/useRoom";
 
 const joinButton = "src/assets/buttons/join-button.svg";
 const codeButton = "src/assets/buttons/code-button.svg";
@@ -9,27 +10,18 @@ const addButton = "src/assets/buttons/add-button.svg";
 
 function LobbyPage() {
   const navigate = useNavigate();
-
   const { data: rooms, isLoading, isError, error } = useAllRoomsQuery();
-  const { mutate: createRoom, data: createdRoom, isPending, isError: isCreateError, error: createError } =
-    useCreateRoom();
 
-  const [roomName, setRoomName] = useState("");
-
-  const handleCreate = () => {
-    if (!roomName.trim()) return;
-    createRoom({ name: roomName });
-  };
-
-  useEffect(() => {
-    if (createdRoom) {
-      navigate(`/room/${createdRoom.joinCode}`);
-    }
-  }, [createdRoom, navigate]);
+  const [showCreate, setShowCreate] = useState(false);
 
   return (
     <div className="flex h-full w-full justify-center items-center">
-      <div className='w-2/5 bg-noise bg-platinum py-8 px-7 border-4 border-pastel-grey rounded-3xl outline-4 outline-platinum'>
+      <CreateRoomModal
+        isOpen={showCreate}
+        onClose={() => setShowCreate(false)}
+      />
+
+      <div className='w-2/5 py-8 px-7 card-rounded'>
         <div>
           <div className="flex justify-between mb-1">
             <h2 className="text-3xl text-black-cow">Room List</h2>
@@ -41,7 +33,7 @@ function LobbyPage() {
                 <img src={codeButton}/>
               </button>
               <button
-                  onClick={() => console.log("Toggle Create")}
+                  onClick={() => setShowCreate((prev) => !prev)}
                   className="hover:scale-105 cursor-pointer"
                 >
                 <img src={addButton}/>
