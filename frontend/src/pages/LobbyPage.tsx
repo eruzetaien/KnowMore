@@ -21,7 +21,7 @@ function LobbyPage() {
         onClose={() => setShowCreate(false)}
       />
 
-      <div className='w-2/5 py-8 px-7 card-rounded'>
+      <div className='w-2/5 min-w-100 py-8 px-7 card-rounded'>
         <div>
           <div className="flex justify-between mb-1">
             <h2 className="text-3xl text-black-cow">Room List</h2>

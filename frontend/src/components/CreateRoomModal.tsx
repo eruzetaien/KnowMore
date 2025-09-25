@@ -34,7 +34,7 @@ export default function CreateRoomModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50  backdrop-blur-xs" onClick={onClose}>
-      <div className=" card-rounded rounded-lg pt-7 pb-4 w-full max-w-1/5 relative" onClick={(e) => e.stopPropagation()}>
+      <div className=" card-rounded rounded-lg pt-7 pb-4 w-88 relative" onClick={(e) => e.stopPropagation()}>
 
         <img src={modalTag} className="absolute -top-8 left-1/2 transform -translate-x-1/2"/> 
 
