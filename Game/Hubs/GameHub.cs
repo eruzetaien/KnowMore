@@ -12,18 +12,21 @@ public class GameHub : Hub
     private readonly IConnectionMultiplexer _redis;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<GameHub> _logger;
-    private readonly FactDb _db; // Add your DbContext here
+    private readonly FactDb _db; 
+    private readonly UserServiceClient _userService;
 
     public GameHub(
         IConnectionMultiplexer redis,
         IHttpClientFactory httpClientFactory,
         ILogger<GameHub> logger,
-        FactDb db)
+        FactDb db,
+        UserServiceClient userService)
     {
         _redis = redis;
         _httpClientFactory = httpClientFactory;
         _logger = logger;
         _db = db;
+        _userService = userService;
     }
 
     public override async Task OnConnectedAsync()
@@ -52,6 +55,7 @@ public class GameHub : Hub
         else if (room.Player2 == 0)
         {
             room.Player2 = userId;
+            room.Player2Name = await _userService.GetPlayerName(userId);
             playerSlot = PlayerSlot.Player2;
             await UpdateEntity<Room>(roomKey, room);
         }
@@ -62,7 +66,7 @@ public class GameHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, request.RoomCode);
         await Clients.Caller.SendAsync("PlayerJoined", new { Role = playerSlot });
         await Clients.Group(request.RoomCode).SendAsync("ReceiveRoomUpdate", new RoomDto(room));
-        await Clients.Group(request.RoomCode).SendAsync("InitRoom", new {room.Player1, room.Player2});
+        await Clients.Group(request.RoomCode).SendAsync("InitRoom", new {room.Player1, room.Player2, room.Player1Name, room.Player2Name});
     }
     
     public async Task SetReadyStateToStartGame(SetPlayerReadyStateRequest request)
@@ -214,7 +218,14 @@ public class GameHub : Hub
     private async Task<GameData> CreateGameData(Room room, string roomKey)
     {
         string gameKey = $"game:{room.JoinCode}";
-        GameData game = new() { RoomCode = room.JoinCode, Player1 = room.Player1, Player2 = room.Player2 };
+        GameData game = new()
+        {
+            RoomCode = room.JoinCode,
+            Player1 = room.Player1,
+            Player2 = room.Player2,
+            Player1Name = room.Player1Name,
+            Player2Name = room.Player2Name
+        };
         string gameJson = JsonSerializer.Serialize(game);
 
         int ttlInMinutes = 30;
@@ -360,7 +371,6 @@ public class GameHub : Hub
     long targetUserId)
     {
         List<object> rewards = [];
-        var client = _httpClientFactory.CreateClient("FactService");
 
         foreach (long factId in statementIds)
         {
@@ -408,7 +418,19 @@ public class GameHub : Hub
         await db.StringSetAsync(key, updatedJson);
     }
 
+    private async Task<string> GetPlayerName(long userId)
+    {
+        HttpClient client = _httpClientFactory.CreateClient("UserService");
+        HttpResponseMessage response = await client.GetAsync($"/internal/users/{userId}/name");
+        if (!response.IsSuccessStatusCode)
+            throw new KeyNotFoundException($"User with id {userId} is not found");
 
+        UserNameDto? playerName = await response.Content.ReadFromJsonAsync<UserNameDto>();
+        if (playerName == null)
+            throw new InvalidOperationException("API response did not contain a valid UserNameDto.");
+        
+        return playerName.Username;
+    }
     
 
     public async Task LeaveRoom(string roomCode)

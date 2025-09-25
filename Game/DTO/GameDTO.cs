@@ -12,11 +12,13 @@ public class RoomDto
 {
     public string JoinCode { get; set; }
     public string Name { get; set; }
+    public string RoomMaster { get; set; }
 
     public RoomDto(Room room)
     {
         JoinCode = room.JoinCode;
         Name = room.Name;
+        RoomMaster = room.Player1Name;
     }
 }
 
@@ -69,3 +71,5 @@ public class SendRewardChoiceRequest()
 {
     public long factId { get; set;} 
 }
+
+public record UserNameDto(string Username);

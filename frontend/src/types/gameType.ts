@@ -22,6 +22,8 @@ export interface RewardStatement {
 export interface InitRoomResponse {
   player1:number;
   player2:number;
+  player1Name:string;
+  player2Name:string;
 }
 
 // Game Phase Initial Data

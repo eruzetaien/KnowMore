@@ -57,7 +57,7 @@ function LobbyPage() {
                   className="grid grid-cols-[1fr_1fr_auto] items-center py-2"
                 >
                   <span className="text-lg" >{room.name}</span>
-                  <span  className="text-lg">{"RoomMaster"}</span>
+                  <span  className="text-lg">{room.roomMaster}</span>
                   <button
                     onClick={() => navigate(`/room/${room.joinCode}`)}
                     className="hover:scale-105 cursor-pointer"

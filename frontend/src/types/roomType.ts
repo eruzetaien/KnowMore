@@ -4,6 +4,7 @@ import type { PlayerSlot } from "./playerType";
 export interface RoomResponse {
   joinCode: string;
   name: string;
+  roomMaster: string;
 }
 
 export interface CreateRoomRequest {

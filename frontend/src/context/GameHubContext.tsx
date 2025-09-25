@@ -106,6 +106,8 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
         allPlayerData: { ...prev.allPlayerData,
           player1 : response.player1,
           player2 : response.player2,
+          player1Name : response.player1Name,
+          player2Name : response.player2Name, 
         }
       }))
     });

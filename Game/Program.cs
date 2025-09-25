@@ -16,15 +16,16 @@ builder.Services
     .AddJwtAuth()
     .AddCustomCors();
 
-builder.Services.AddHttpClient("FactService", client =>
+builder.Services.AddHttpClient("UserService", client =>
 {
-    string factBaseUrl = Environment.GetEnvironmentVariable("FACT_BASE_URL")
-        ?? throw new InvalidOperationException("FACT_BASE_URL environment variable is not set.");
+    string factBaseUrl = Environment.GetEnvironmentVariable("USER_BASE_URL")
+        ?? throw new InvalidOperationException("USER_BASE_URL environment variable is not set.");
     client.BaseAddress = new Uri(factBaseUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.DefaultRequestHeaders.Add("X-API-KEY", Environment.GetEnvironmentVariable("API_KEY"));
 });
-    
+builder.Services.AddTransient<UserServiceClient>();
+
 var app = builder.Build();
 
 app.UseCors("FrontendPolicy");
@@ -34,7 +35,7 @@ app.UseAuthorization();
 app.MapHub<GameHub>("/gamehub")
    .RequireAuthorization();
 
-app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto, IConnectionMultiplexer redis) =>
+app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto, IConnectionMultiplexer redis, UserServiceClient client) =>
 {
     if (!userClaim.TryGetUserId(out long userId))
         return Results.Unauthorized();
@@ -48,6 +49,7 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
         JoinCode = joinCode,
         Name = createDto.Name,
         Player1 = userId,
+        Player1Name = await client.GetPlayerName(userId),
         Player2 = 0,
         IsPlayer1Ready = false,
         IsPlayer2Ready = false,

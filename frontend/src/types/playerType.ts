@@ -18,6 +18,8 @@ export interface PlayerData {
 export interface AllPlayerData {
   player1: number;
   player2: number;
+  player1Name: string;
+  player2Name: string;
   isPlayer1Ready: boolean;
   isPlayer2Ready: boolean;
   player1Emot: Emoticon;

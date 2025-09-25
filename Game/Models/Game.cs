@@ -9,6 +9,8 @@ public abstract class HasPlayersBase
 {
     public long Player1 { get; set; }
     public long Player2 { get; set; }
+    public string Player1Name { get; set; } = string.Empty;
+    public string Player2Name { get; set; } = string.Empty;
 
     public PlayerSlot GetPlayerSlot(long userId) =>
         userId == Player1 ? PlayerSlot.Player1 : userId == Player2 ? PlayerSlot.Player2 : PlayerSlot.None;
