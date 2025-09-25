@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { useCreateRoom } from "../hooks/useRoom";
 import { useNavigate } from "react-router-dom";
+import { useCreateRoom } from "../hooks/useRoom";
+
+import createButton from "../assets/buttons/create-button.svg";
+import modalTag from "../assets/create-room-tag.svg";
+import inputContainer from "../assets/input-container.svg";
 
 type CreateRoomModalProps = {
   isOpen: boolean;
   onClose: () => void;
-};
-
-const createButton = "src/assets/buttons/create-button.svg";
-const modalTag = "src/assets/create-room-tag.svg"; 
-const inputContainer = "src/assets/input-container.svg"; 
+}; 
 
 export default function CreateRoomModal({
   isOpen,

@@ -1,12 +1,12 @@
-import { useState} from "react";
-import { useAllRoomsQuery} from "../hooks/useRoom";
-import CreateRoomModal from "../components/CreateRoomModal";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import CreateRoomModal from "../components/CreateRoomModal";
+import { useAllRoomsQuery } from "../hooks/useRoom";
 
-const joinButton = "src/assets/buttons/join-button.svg";
-const codeButton = "src/assets/buttons/code-button.svg";
-const refreshButton = "src/assets/buttons/refresh-button.svg";
-const addButton = "src/assets/buttons/add-button.svg";
+import addButton from "../assets/buttons/add-button.svg";
+import codeButton from "../assets/buttons/code-button.svg";
+import joinButton from "../assets/buttons/join-button.svg";
+import refreshButton from "../assets/buttons/refresh-button.svg";
 
 function LobbyPage() {
   const navigate = useNavigate();

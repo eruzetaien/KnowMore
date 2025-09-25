@@ -26,7 +26,7 @@ body {
 .card-rounded {
   background-color: #E7E4DD;
   border-color: #D2CCC0;
-  background-image: url("src/assets/noise.png");
+  background-image: url("assets/noise.png");
   background-repeat: repeat;
   background-size: auto;
   border-width: 3px;
