@@ -10,7 +10,7 @@ const addButton = "src/assets/buttons/add-button.svg";
 
 function LobbyPage() {
   const navigate = useNavigate();
-  const { data: rooms, isLoading, isError, error } = useAllRoomsQuery();
+  const { data: rooms, isLoading, isError, error, refetch } = useAllRoomsQuery();
 
   const [showCreate, setShowCreate] = useState(false);
 
@@ -40,7 +40,7 @@ function LobbyPage() {
               </button>
 
               <button
-                  onClick={() => console.log("Refresh")}
+                  onClick={() => refetch()}
                   className="hover:scale-105 cursor-pointer"
                 >
                 <img src={refreshButton}/>
