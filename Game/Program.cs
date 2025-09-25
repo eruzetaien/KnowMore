@@ -53,7 +53,6 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
         Player2 = 0,
         IsPlayer1Ready = false,
         IsPlayer2Ready = false,
-        HasGameStarted = false
     };
     string roomJson = JsonSerializer.Serialize(room);
 
@@ -93,7 +92,7 @@ app.MapGet("/rooms", async (ClaimsPrincipal userClaim, IConnectionMultiplexer re
             if (room is null)
                 continue;
 
-            if (room.HasGameStarted)
+            if (room.Player1 != 0 && room.Player2 != 0)
                 hasStartedRoomKeys.Add(roomJson);
             else
                 rooms.Add(new RoomDto(room));

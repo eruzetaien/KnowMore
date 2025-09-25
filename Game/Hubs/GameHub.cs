@@ -77,8 +77,6 @@ public class GameHub : Hub
         _logger.LogInformation(roomKey);
         Room room = await GetEntity<Room>(roomKey);
 
-        if (room.HasGameStarted) return;
-
         PlayerSlot playerSlot = room.GetPlayerSlot(userId);
 
         if (playerSlot == PlayerSlot.None)
@@ -88,13 +86,13 @@ public class GameHub : Hub
             room.IsPlayer1Ready = request.IsReady;
         else
             room.IsPlayer2Ready = request.IsReady;
-        room.HasGameStarted = room.IsPlayer1Ready && room.IsPlayer2Ready;
+
         await UpdateEntity<Room>(roomKey, room);
         
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
                 new { room.IsPlayer1Ready, room.IsPlayer2Ready });
 
-        if (room.HasGameStarted)
+        if (room.IsPlayer1Ready && room.IsPlayer2Ready)
         {
             GameData game = await CreateGameData(room, roomKey);
             string gameKey = $"game:{game.RoomCode}";
