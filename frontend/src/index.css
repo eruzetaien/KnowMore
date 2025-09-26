@@ -36,6 +36,18 @@ body {
   outline-color: #E7E4DD;
 }
 
+.sprite {
+  animation: play 1s steps(3) infinite;
+  image-rendering: pixelated;
+}
+@keyframes play {
+  from {
+    background-position: 0% 0;
+  }
+  to {
+    background-position: 150% 0;
+  }
+}
 
 
 @keyframes fadeOutScale {
