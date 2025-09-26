@@ -36,6 +36,18 @@ body {
   outline-color: #E7E4DD;
 }
 
+.back-card-rounded {
+  background-color: #453D54;
+  background-image: url("assets/card-pattern.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: auto; 
+  border-radius: 1.5rem; /* rounded-3xl */
+  outline-style: solid;
+  outline-width: 4px;
+  outline-color: #000000;
+}
+
 .sprite {
   animation: play 1s steps(3) infinite;
   image-rendering: pixelated;

@@ -11,6 +11,10 @@ export default function PlayerCard({
   sprite,
   isFlipped = false,
 }: PlayerCardProps) {
+  if (!sprite || !name) {
+    return <div className="w-1/5 aspect-3/4 back-card-rounded"></div>;
+  }
+  
   return (
     <div
       className={`rounded-3xl w-1/5 ${
