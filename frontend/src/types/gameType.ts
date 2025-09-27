@@ -19,11 +19,13 @@ export interface RewardStatement {
 }
 
 // Room Initial Data
-export interface InitRoomResponse {
+export interface InitPlayerResponse {
   player1:number;
   player2:number;
   player1Name:string;
   player2Name:string;
+  isPlayer1Ready: boolean;
+  isPlayer2Ready: boolean;
 }
 
 // Game Phase Initial Data

@@ -59,7 +59,7 @@ function RoomPage() {
       
       {/* Ready Button */}
       <button className="hover:scale-105 cursor-pointer" onClick={handleReadyClick}>
-        {allPlayerData.isPlayer1Ready ? (
+        {ready ? (
           <img src={cancelButton} alt="cancel button" />
         ) : (
           <div className="relative h-fit flex justify-end items-center">

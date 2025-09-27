@@ -66,7 +66,15 @@ public class GameHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, request.RoomCode);
         await Clients.Caller.SendAsync("PlayerJoined", new { Role = playerSlot });
         await Clients.Group(request.RoomCode).SendAsync("ReceiveRoomUpdate", new RoomDto(room));
-        await Clients.Group(request.RoomCode).SendAsync("InitRoom", new {room.Player1, room.Player2, room.Player1Name, room.Player2Name});
+        await Clients.Group(request.RoomCode).SendAsync("InitPlayer", new
+        {
+            room.Player1,
+            room.Player2,
+            room.Player1Name,
+            room.Player2Name,
+            room.IsPlayer1Ready,
+            room.IsPlayer2Ready,
+        });
     }
     
     public async Task SetReadyStateToStartGame(SetPlayerReadyStateRequest request)
