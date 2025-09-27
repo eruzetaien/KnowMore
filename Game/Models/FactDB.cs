@@ -5,6 +5,7 @@ public class FactDb : DbContext
     public FactDb(DbContextOptions<FactDb> options)
         : base(options) { }
 
+    public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<UserFact> Facts => Set<UserFact>();
     public DbSet<FactGroup> FactGroups => Set<FactGroup>();
     public DbSet<SharedFact> SharedFacts => Set<SharedFact>();

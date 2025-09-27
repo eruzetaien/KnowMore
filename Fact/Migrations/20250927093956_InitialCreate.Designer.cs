@@ -8,11 +8,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Game.Migrations
+namespace Fact.Migrations
 {
     [DbContext(typeof(FactDb))]
-    [Migration("20250909053847_AddSharedFactTable")]
-    partial class AddSharedFactTable
+    [Migration("20250927093956_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -23,6 +23,23 @@ namespace Game.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("AppUser", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Users");
+                });
 
             modelBuilder.Entity("FactGroup", b =>
                 {
@@ -50,6 +67,8 @@ namespace Game.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("FactGroups");
                 });
@@ -95,7 +114,20 @@ namespace Game.Migrations
 
                     b.HasIndex("FactGroupId");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("Facts");
+                });
+
+            modelBuilder.Entity("FactGroup", b =>
+                {
+                    b.HasOne("AppUser", "User")
+                        .WithMany("Groups")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SharedFact", b =>
@@ -117,7 +149,22 @@ namespace Game.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("AppUser", "User")
+                        .WithMany("Facts")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Group");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("AppUser", b =>
+                {
+                    b.Navigation("Facts");
+
+                    b.Navigation("Groups");
                 });
 
             modelBuilder.Entity("FactGroup", b =>
