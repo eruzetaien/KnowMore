@@ -1,4 +1,5 @@
 using DotNetEnv;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,8 @@ builder.Services
     .AddJwtAuth()
     .AddCustomCors()
     .AddSwagger(documentName:"KnowMoreFactAPI", title:"KnowMoreFactAPI", version:"v1");
+
+builder.Services.AddHostedService<UserEventSubscriber>();
 
 var app = builder.Build();
 

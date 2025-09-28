@@ -24,6 +24,9 @@ builder.Services
     .AddCustomCors()
     .AddSwagger(documentName:"KnowMoreUserAPI", title:"KnowMoreUserAPI", version:"v1");
 
+builder.Services.AddSingleton<UserEventPublisher>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<UserEventPublisher>());
+
 var app = builder.Build();
 
 app.UseCors("FrontendPolicy");
@@ -52,7 +55,7 @@ static async Task ChallengeProvider(HttpContext context, string provider)
 }
 app.MapGet("/login/google", (HttpContext context) => ChallengeProvider(context, "Google"));
 
-app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake snowflake) =>
+app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake snowflake, UserEventPublisher publisher) =>
 {
     if (!(context.User.Identity?.IsAuthenticated ?? false))
         return Results.Unauthorized();
@@ -88,6 +91,9 @@ app.MapGet("/login-callback", async (HttpContext context, UserDb db, Snowflake s
 
         db.Users.Add(user);
         await db.SaveChangesAsync();
+
+        UserEvent userEvent = new(UserAction.Created, user.Id, user.Username);
+        await publisher.PublishUserCreated(userEvent);
     }
 
     // Issue JWT
@@ -133,7 +139,7 @@ app.MapGet("/me", async (ClaimsPrincipal userClaim, UserDb db) =>
 })
 .RequireAuthorization();
 
-app.MapPut("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDto, UserDb db) =>
+app.MapPut("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDto, UserDb db, UserEventPublisher publisher) =>
 {
     if (!userClaim.TryGetUserId(out long userId))
         return Results.Unauthorized();
@@ -154,8 +160,14 @@ app.MapPut("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDto,
     }
 
     // Update
-    if (!string.IsNullOrWhiteSpace(updateDto.Username))
+    bool usernameChanged = false;
+
+    // Update
+    if (!string.IsNullOrWhiteSpace(updateDto.Username) && updateDto.Username != user.Username)
+    {
         user.Username = updateDto.Username;
+        usernameChanged = true;
+    }
 
     if (!string.IsNullOrWhiteSpace(updateDto.Description))
         user.Description = updateDto.Description;
@@ -163,6 +175,12 @@ app.MapPut("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDto,
     user.UpdatedAt = DateTime.UtcNow;
 
     await db.SaveChangesAsync();
+
+    if (usernameChanged)
+    {
+        UserEvent userEvent = new(UserAction.Updated, userId, user.Username);
+        await publisher.PublishUserCreated(userEvent);
+    }
 
     return Results.Ok(new UserDTO(user));
 })
