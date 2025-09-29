@@ -25,6 +25,7 @@ builder.Services.AddHttpClient("UserService", client =>
     client.DefaultRequestHeaders.Add("X-API-KEY", Environment.GetEnvironmentVariable("API_KEY"));
 });
 builder.Services.AddTransient<UserServiceClient>();
+builder.Services.AddHostedService<UserEventSubscriber>();
 
 var app = builder.Build();
 
