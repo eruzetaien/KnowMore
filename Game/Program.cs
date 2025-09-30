@@ -24,7 +24,7 @@ builder.Services.AddHttpClient("UserService", client =>
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.DefaultRequestHeaders.Add("X-API-KEY", Environment.GetEnvironmentVariable("API_KEY"));
 });
-builder.Services.AddTransient<UserServiceClient>();
+builder.Services.AddScoped<UserService>();
 builder.Services.AddHostedService<UserEventSubscriber>();
 
 var app = builder.Build();
@@ -36,7 +36,7 @@ app.UseAuthorization();
 app.MapHub<GameHub>("/gamehub")
    .RequireAuthorization();
 
-app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto, IConnectionMultiplexer redis, UserServiceClient client) =>
+app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto, IConnectionMultiplexer redis, UserService userService) =>
 {
     if (!userClaim.TryGetUserId(out long userId))
         return Results.Unauthorized();
@@ -50,7 +50,7 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
         JoinCode = joinCode,
         Name = createDto.Name,
         Player1 = userId,
-        Player1Name = await client.GetPlayerName(userId),
+        Player1Name = await userService.GetUsername(userId),
         Player2 = 0,
         IsPlayer1Ready = false,
         IsPlayer2Ready = false,

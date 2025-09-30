@@ -13,14 +13,14 @@ public class GameHub : Hub
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<GameHub> _logger;
     private readonly FactDb _db; 
-    private readonly UserServiceClient _userService;
+    private readonly UserService _userService;
 
     public GameHub(
         IConnectionMultiplexer redis,
         IHttpClientFactory httpClientFactory,
         ILogger<GameHub> logger,
         FactDb db,
-        UserServiceClient userService)
+        UserService userService)
     {
         _redis = redis;
         _httpClientFactory = httpClientFactory;
@@ -55,7 +55,7 @@ public class GameHub : Hub
         else if (room.Player2 == 0)
         {
             room.Player2 = userId;
-            room.Player2Name = await _userService.GetPlayerName(userId);
+            room.Player2Name = await _userService.GetUsername(userId);
             playerSlot = PlayerSlot.Player2;
             await UpdateEntity<Room>(roomKey, room);
         }
@@ -395,6 +395,19 @@ public class GameHub : Hub
         }
 
         return rewards;
+    }
+
+    private async Task<String> GetUsername(long userId)
+    { 
+        string? name = await _db.Users
+            .Where(u => u.Id == userId)
+            .Select(u => u.UserName)
+            .FirstOrDefaultAsync();
+
+        if (name == null)
+            return "";
+
+        return name;
     }
 
 
