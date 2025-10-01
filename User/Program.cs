@@ -187,20 +187,4 @@ app.MapPut("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDto,
 .RequireAuthorization()
 .AddEndpointFilter<ValidationFilter<UpdateUserDTO>>();
 
-app.MapGet("/internal/users/{id}/name", async (HttpContext context, long id, UserDb db) =>
-{
-    if (!context.Request.Headers.TryGetValue("X-API-KEY", out var key) || key != Environment.GetEnvironmentVariable("API_KEY"))
-        return Results.Unauthorized();  
-
-    string? name = await db.Users
-        .Where(u => u.Id == id)
-        .Select(u => u.Username)
-        .FirstOrDefaultAsync();
-
-    if (name == null)
-        return Results.NotFound("User does not exist.");
-
-    return Results.Ok(new { Username= name});
-});
-
 app.Run();
