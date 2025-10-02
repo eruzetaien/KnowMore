@@ -13,7 +13,7 @@ public class UserService
     {
         var name = await _db.Users
             .Where(u => u.Id == userId)
-            .Select(u => u.UserName)
+            .Select(u => u.Username)
             .FirstOrDefaultAsync();
 
         return name ?? string.Empty;

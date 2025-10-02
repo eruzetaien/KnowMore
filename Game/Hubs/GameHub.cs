@@ -401,7 +401,7 @@ public class GameHub : Hub
     { 
         string? name = await _db.Users
             .Where(u => u.Id == userId)
-            .Select(u => u.UserName)
+            .Select(u => u.Username)
             .FirstOrDefaultAsync();
 
         if (name == null)

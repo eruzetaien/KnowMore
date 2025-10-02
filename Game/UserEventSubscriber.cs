@@ -47,7 +47,7 @@ public class UserEventSubscriber : IHostedService
                     switch (userEvent.action)
                     {
                         case UserAction.Created:
-                            db.Users.Add(new AppUser { Id = userEvent.UserId, UserName = userEvent.Username });
+                            db.Users.Add(new AppUser { Id = userEvent.UserId, Username = userEvent.Username });
                             await db.SaveChangesAsync();
                             break;
 
@@ -55,7 +55,7 @@ public class UserEventSubscriber : IHostedService
                             var user = await db.Users.FindAsync(userEvent.UserId);
                             if (user != null)
                             {
-                                user.UserName = userEvent.Username;
+                                user.Username = userEvent.Username;
                                 await db.SaveChangesAsync();
                             }
                             break;
