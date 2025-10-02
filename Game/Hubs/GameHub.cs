@@ -397,20 +397,6 @@ public class GameHub : Hub
         return rewards;
     }
 
-    private async Task<String> GetUsername(long userId)
-    { 
-        string? name = await _db.Users
-            .Where(u => u.Id == userId)
-            .Select(u => u.Username)
-            .FirstOrDefaultAsync();
-
-        if (name == null)
-            return "";
-
-        return name;
-    }
-
-
     private async Task<T> GetEntity<T>(string key)
     {
         IDatabase db = _redis.GetDatabase();
