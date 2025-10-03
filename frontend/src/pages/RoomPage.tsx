@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useGameHub } from "../context/GameHubContext";
 
+import player1Idle from "../assets/players/player1-idle.png";
 import player2Idle from "../assets/players/player2-idle.png";
 import yellowButton from "../assets/buttons/yellow-button.svg";
 import cancelButton from "../assets/buttons/cancel-button.svg";
@@ -47,7 +48,7 @@ function RoomPage() {
         <PlayerCard
           name={allPlayerData.player1Name}
           isReady={allPlayerData.isPlayer1Ready}
-          sprite={player2Idle}
+          sprite={player1Idle}
         />
         <PlayerCard
           name={allPlayerData.player2Name}
