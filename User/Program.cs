@@ -147,10 +147,10 @@ app.MapPut("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDto,
     var user = await db.Users.FindAsync(userId);
     if (user == null) return Results.NotFound();
 
+    string normalizedUsername = updateDto.Username.ToLowerInvariant();
     // Validation
     if (!string.IsNullOrWhiteSpace(updateDto.Username))
     {
-        string normalizedUsername = updateDto.Username.ToLowerInvariant();
         if (await db.Users.AnyAsync(u =>
             u.NormalizedUsername == normalizedUsername &&
             u.Id != userId))
@@ -166,6 +166,7 @@ app.MapPut("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDto,
     if (!string.IsNullOrWhiteSpace(updateDto.Username) && updateDto.Username != user.Username)
     {
         user.Username = updateDto.Username;
+        user.NormalizedUsername = normalizedUsername;
         usernameChanged = true;
     }
 
