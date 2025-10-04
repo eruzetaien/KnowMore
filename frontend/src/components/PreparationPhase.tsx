@@ -2,6 +2,13 @@ import { useState } from "react";
 import { useGameHub } from "../context/GameHubContext";
 import { useCountdown } from "../hooks/useCountdown";
 
+import player1Thinking from "../assets/players/state/player1-thinking.png";
+import player2Thinking from "../assets/players/state/player2-thinking.png";
+import player1Chilling from "../assets/players/state/player1-chilling.png";
+import player2Chilling from "../assets/players/state/player2-chilling.png";
+import PlayerState from "./PlayerState";
+
+
 export default function PreparationPhase() {
   const { allPlayerData, isLoading: hubLoading, sendStatements, room, preparationPhaseData } = useGameHub();
 
@@ -37,15 +44,37 @@ export default function PreparationPhase() {
   return (
     <div className="flex flex-col justify-center items-center">
       {/* Timer */}
-      <div className="flex flex-col justify-center items-center">
-        <span className="text-xl -mb-2 font-bold" > Timer</span>
+      <div className="flex flex-col justify-center items-center mt-4 mb-6 text-black">
+        <span className="text-xl -mb-2" > Timer</span>
         <h2 className="text-5xl" >{minutes}:{seconds.toString().padStart(2, "0")}</h2>
       </div>
-      <h2 className="text-xl font-bold mb-4">Preparation Phase</h2>
-      <p>Player 1 Ready: {allPlayerData.isPlayer1Ready ? "✅" : "❌"}</p>
-      <p>Player 2 Ready: {allPlayerData.isPlayer2Ready ? "✅" : "❌"}</p>
 
-      <h3 className="text-lg font-semibold mt-4">Your Fact Groups</h3>
+
+      <h2 className="text-5xl mb-4">Prepare your card to play!</h2>
+
+
+      {/* Player State */}
+      <div className="flex justify-between w-5/6">
+        <PlayerState
+          name={allPlayerData.player1Name}
+          score={allPlayerData.player1Score}
+          isReady={allPlayerData.isPlayer1Ready}
+          chillingImg={player1Chilling}
+          thinkingImg={player1Thinking}
+        />
+        <div className="">
+          Player Card
+        </div>
+        <PlayerState
+          name={allPlayerData.player2Name}
+          score={allPlayerData.player2Score}
+          isReady={allPlayerData.isPlayer2Ready}
+          chillingImg={player2Chilling}
+          thinkingImg={player2Thinking}
+          isFlipped={true}
+        />
+      </div>
+
       {preparationPhaseData.playerFacts?.length ? (
         <ul className="space-y-2 mt-2">
           {preparationPhaseData.playerFacts.map((group) => (
