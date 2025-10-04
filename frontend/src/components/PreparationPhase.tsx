@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useGameHub } from "../context/GameHubContext";
+import { useCountdown } from "../hooks/useCountdown";
 
 export default function PreparationPhase() {
   const { allPlayerData, isLoading: hubLoading, sendStatements, room, preparationPhaseData } = useGameHub();
 
   const [selectedFacts, setSelectedFacts] = useState<number[]>([]);
   const [lie, setLie] = useState("");
+
+  const { minutes, seconds } = useCountdown(180); // 3 minutes
 
   if (hubLoading) return <p>Loading hub connection...</p>;
 
@@ -32,7 +35,12 @@ export default function PreparationPhase() {
   };
 
   return (
-    <div>
+    <div className="flex flex-col justify-center items-center">
+      {/* Timer */}
+      <div className="flex flex-col justify-center items-center">
+        <span className="text-xl -mb-2 font-bold" > Timer</span>
+        <h2 className="text-5xl" >{minutes}:{seconds.toString().padStart(2, "0")}</h2>
+      </div>
       <h2 className="text-xl font-bold mb-4">Preparation Phase</h2>
       <p>Player 1 Ready: {allPlayerData.isPlayer1Ready ? "✅" : "❌"}</p>
       <p>Player 2 Ready: {allPlayerData.isPlayer2Ready ? "✅" : "❌"}</p>
