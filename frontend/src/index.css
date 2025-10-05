@@ -4,6 +4,7 @@
   --color-platinum: #E7E4DD;
   --color-pastel-grey: #D2CCC0;
   --color-black-cow: #534C42;
+  --color-heathered-grey: #B9AE9C;
 }
 
 :root {
@@ -46,6 +47,19 @@ body {
   outline-style: solid;
   outline-width: 4px;
   outline-color: #000000;
+}
+
+.border-coupon-fill {
+  border: solid;
+  border-image: url("assets/border-fill.svg");
+  border-image-slice: 33%;
+  border-image-width:16px;
+}
+.border-coupon-white {
+  border: solid;
+  border-image: url("assets/border.svg");
+  border-image-slice: 33%;
+  border-image-width:16px;
 }
 
 .sprite {

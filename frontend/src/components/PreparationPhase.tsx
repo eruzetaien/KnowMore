@@ -54,7 +54,7 @@ export default function PreparationPhase() {
 
 
       {/* Player State */}
-      <div className="flex justify-between w-5/6">
+      <div className="flex justify-between w-11/12">
         <PlayerState
           name={allPlayerData.player1Name}
           score={allPlayerData.player1Score}
@@ -62,8 +62,20 @@ export default function PreparationPhase() {
           chillingImg={player1Chilling}
           thinkingImg={player1Thinking}
         />
-        <div className="">
-          Player Card
+        <div className="flex flex-col w-full items-center justify-center">
+          <div className="w-4/5 bg-platinum rounded-3xl border-4 border-heathered-grey p-6 outline-2 -outline-offset-7 outline-heathered-grey">
+            <div className="w-full"> 
+              <div className="border-2 border-coupon-fill">
+                <div className="border-4 border-coupon-white">
+                  <div className="border-4 border-coupon-fill">
+                    <div className="bg-[#E1D9CE] p-2 text-xl">
+                      Sed et vulputate massa 
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <PlayerState
           name={allPlayerData.player2Name}

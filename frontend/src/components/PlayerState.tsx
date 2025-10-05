@@ -20,12 +20,12 @@ export default function PlayerState({
       className="flex flex-col items-center text-center text-black"
     >
       <img
-        className={`w-80 ${ isFlipped ? "scale-x-[-1]" : ""}`}
+        className={`w-200 ${ isFlipped ? "scale-x-[-1]" : ""}`}
         src={isReady ? chillingImg : thinkingImg}
         alt="Player state"
       />
       <h3 className="text-2xl mt-2">{name ?? "-"}</h3>
-      <h3 className="text-5xl -mt-2">{score ?? 0}</h3>
+      <h3 className="text-7xl -mt-2">{score ?? 0}</h3>
     </div>
   );
 }
