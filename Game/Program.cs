@@ -61,8 +61,9 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
     await db.StringSetAsync(roomKey, roomJson, TimeSpan.FromMinutes(ttlInMinutes));
     var expiryAt = DateTimeOffset.UtcNow.AddMinutes(ttlInMinutes).ToUnixTimeSeconds();
     await db.SortedSetAddAsync("rooms:index", roomKey, expiryAt);
+    await db.StringSetAsync($"user_room:{userId}", joinCode);
 
-    return Results.Ok(new {room.JoinCode});
+    return Results.Ok(new { room.JoinCode });
 })
 .RequireAuthorization()
 .AddEndpointFilter<ValidationFilter<CreateRoomDto>>();
