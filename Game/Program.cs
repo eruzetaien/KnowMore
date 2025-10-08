@@ -76,7 +76,7 @@ app.MapGet("/rooms", async (ClaimsPrincipal userClaim, IConnectionMultiplexer re
     IDatabase db = redis.GetDatabase();
     long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-    RedisValue[] expiredKeys = await db.SortedSetRangeByScoreAsync("rooms:index", double.NegativeInfinity, now - 1);    
+    RedisValue[] expiredKeys = await db.SortedSetRangeByScoreAsync("rooms:index", double.NegativeInfinity, now - 1);
     if (expiredKeys.Length > 0)
         await db.SortedSetRemoveAsync("rooms:index", expiredKeys);
 
@@ -105,6 +105,22 @@ app.MapGet("/rooms", async (ClaimsPrincipal userClaim, IConnectionMultiplexer re
         await db.SortedSetRemoveAsync("rooms:index", hasStartedRoomKeys.ToArray());
 
     return Results.Ok(rooms);
+})
+.RequireAuthorization();
+
+
+app.MapGet("/rooms/user", async (ClaimsPrincipal userClaim, IConnectionMultiplexer redis) =>
+{
+    if (!userClaim.TryGetUserId(out long userId))
+        return Results.Unauthorized();
+
+    IDatabase db = redis.GetDatabase();
+    string? roomCode = await db.StringGetAsync($"user_room:{userId}");
+
+    if (string.IsNullOrEmpty(roomCode))
+        return Results.NotFound(new { message = "User is not in any room." });
+
+    return Results.Ok(new { roomCode });
 })
 .RequireAuthorization();
 
