@@ -14,3 +14,7 @@ export interface CreateRoomRequest {
 export interface JoinRoomResponse {
   playerSlot: PlayerSlot;
 }
+
+export interface PlayerRoomResponse {
+  roomCode: string;
+}

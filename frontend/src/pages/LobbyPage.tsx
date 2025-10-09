@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateRoomModal from "../components/CreateRoomModal";
-import { useAllRoomsQuery } from "../hooks/useRoom";
+import { useAllRoomsQuery, usePlayerRoomQuery } from "../hooks/useRoom";
 
 import addButton from "../assets/buttons/add-button.svg";
 import codeButton from "../assets/buttons/code-button.svg";
@@ -11,8 +11,16 @@ import refreshButton from "../assets/buttons/refresh-button.svg";
 function LobbyPage() {
   const navigate = useNavigate();
   const { data: rooms, isLoading, isError, error, refetch } = useAllRoomsQuery();
+  const { data: playerRoom } = usePlayerRoomQuery();
 
   const [showCreate, setShowCreate] = useState(false);
+
+  useEffect(() => {
+    if (playerRoom?.roomCode?.trim()) {
+      navigate(`/room/${playerRoom.roomCode}`);
+    }
+  }, [playerRoom, navigate]);
+
 
   return (
     <div className="flex h-full w-full justify-center items-center">
