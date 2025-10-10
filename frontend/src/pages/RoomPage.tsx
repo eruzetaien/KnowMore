@@ -10,15 +10,20 @@ import PlayerCard from "../components/PlayerCard";
 
 function RoomPage() {
   const { roomCode } = useParams();
-  const { room, allPlayerData, isLoading, joinRoom, setReadyStateToStartGame } = useGameHub();
+  const { connected, disconnect, room, allPlayerData, isLoading, joinRoom, setReadyStateToStartGame } = useGameHub();
 
   const [ready, setReady] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (roomCode) {
       joinRoom(roomCode);
     }
-  }, [roomCode]);
+
+    if (!connected){
+      navigate("/lobby");
+    }
+  }, [roomCode, connected]);
 
   const handleReadyClick = () => {
     const newState = !ready;
@@ -26,7 +31,6 @@ function RoomPage() {
     setReadyStateToStartGame(room.joinCode, newState); // if GameHub provides ready state update
   };
 
-  const navigate = useNavigate();
   if (allPlayerData.isPlayer1Ready && allPlayerData.isPlayer2Ready) 
     navigate(`/game/${roomCode}`);
 
@@ -58,19 +62,23 @@ function RoomPage() {
         />
       </div>
       
-      {/* Ready Button */}
-      <button className="hover:scale-105 cursor-pointer" onClick={handleReadyClick}>
-        {ready ? (
-          <img src={cancelButton} alt="cancel button" />
-        ) : (
-          <div className="relative h-fit flex justify-end items-center">
-            <img src={yellowButton} alt="ready button" />
-            <span className="absolute inset-0 flex items-center justify-center text-2xl">
-              Ready
-            </span>
-          </div>
-        )}
-      </button>
+      {/* Button */}
+      <div className="flex">
+        <button className="hover:scale-105 cursor-pointer" onClick={disconnect}>Leave</button>
+
+        <button className="hover:scale-105 cursor-pointer" onClick={handleReadyClick}>
+          {ready ? (
+            <img src={cancelButton} alt="cancel button" />
+          ) : (
+            <div className="relative h-fit flex justify-end items-center">
+              <img src={yellowButton} alt="ready button" />
+              <span className="absolute inset-0 flex items-center justify-center text-2xl">
+                Ready
+              </span>
+            </div>
+          )}
+        </button>
+      </div>
 
     </div>
   );

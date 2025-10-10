@@ -155,33 +155,31 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }))
     });
 
+    connection.on("Disconnect", async () => {
+      if (connection) {
+        setData(prev => ({ ...prev, isLoading: true })); // start loading
+        await connection.stop();
+        connection = null;
+        setData(gameHubDataInit); // stop loading
+      }
+    });
+
     await connection.start();
     setData(prev => ({ ...prev, connected: true, isLoading: false })); // stop loading
     console.log("GameHub Connected");
   }, [data.isLoading]);
 
-  const disconnect = useCallback(async () => {
-    if (connection) {
-      setData(prev => ({ ...prev, isLoading: true })); // start loading
-      await connection.stop();
-      connection = null;
-      setData(gameHubDataInit); // stop loading
-    }
-  }, []);
-
   const invokeWithConnection = useCallback(
     async (method: string, ...args: any[]) => {
       if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
-        await connect();
+        console.warn(`Connection not ready for ${method}`);
+        return;
       }
 
-      if (connection?.state === signalR.HubConnectionState.Connected) {
-        await connection.invoke(method, ...args);
+      await connection.invoke(method, ...args);
         console.log(`Invoked ${method}`, ...args);
-      } else {
-        console.warn(`Connection not ready for ${method}`);
-      }
-    },
+      },
+      
     [connect]
   );
 
@@ -234,11 +232,27 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [invokeWithConnection]
   );
 
+  const disconnect = useCallback(
+    async () => {
+      await invokeWithConnection("Disconnect" );
+    },
+    [invokeWithConnection]
+  );
+
+  const clientDisconnect = useCallback(async () => {
+    if (connection) {
+      setData(prev => ({ ...prev, isLoading: true })); // start loading
+      await connection.stop();
+      connection = null;
+      setData(gameHubDataInit); // stop loading
+    }
+  }, []);
+
   useEffect(() => {
     return () => {
-      disconnect();
+      clientDisconnect();
     };
-  }, [disconnect]);
+  }, [clientDisconnect]);
 
   return (
     <GameHubContext.Provider

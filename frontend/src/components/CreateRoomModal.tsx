@@ -5,6 +5,7 @@ import { useCreateRoom } from "../hooks/useRoom";
 import createButton from "../assets/buttons/create-button.svg";
 import modalTag from "../assets/create-room-tag.svg";
 import inputContainer from "../assets/input-container.svg";
+import { useGameHub } from "../context/GameHubContext";
 
 type CreateRoomModalProps = {
   isOpen: boolean;
@@ -18,17 +19,27 @@ export default function CreateRoomModal({
   const navigate = useNavigate();
   const [roomName, setRoomName] = useState("");
   const { mutate: createRoom, data: createdRoom, isPending, isError: isCreateError, error: createError } = useCreateRoom();
+  const {connect} = useGameHub();
 
   const handleCreate = () => {
     if (!roomName.trim()) return;
     createRoom({ name: roomName });
   };
 
-  useEffect(() => {
-    if (createdRoom) {
-      navigate(`/room/${createdRoom.joinCode}`);
-    }
-  }, [createdRoom, navigate]);
+    useEffect(() => {
+      let isMounted = true;
+
+      const setup = async (joinCode : string) => {
+        await connect();
+        if (isMounted)
+          navigate(`/room/${joinCode}`);
+      };
+        
+      if (createdRoom) 
+        setup(createdRoom.joinCode);
+
+      return () => { isMounted = false;};
+    }, [createdRoom, navigate]);
 
   if (!isOpen) return null;
 

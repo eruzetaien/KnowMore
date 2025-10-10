@@ -7,20 +7,26 @@ import addButton from "../assets/buttons/add-button.svg";
 import codeButton from "../assets/buttons/code-button.svg";
 import joinButton from "../assets/buttons/join-button.svg";
 import refreshButton from "../assets/buttons/refresh-button.svg";
+import { useGameHub } from "../context/GameHubContext";
 
 function LobbyPage() {
   const navigate = useNavigate();
   const { data: rooms, isLoading, isError, error, refetch } = useAllRoomsQuery();
   const { data: playerRoom } = usePlayerRoomQuery();
+  const {connect} = useGameHub();
 
   const [showCreate, setShowCreate] = useState(false);
 
-  useEffect(() => {
-    if (playerRoom?.roomCode?.trim()) {
-      navigate(`/room/${playerRoom.roomCode}`);
-    }
-  }, [playerRoom, navigate]);
+  const joinRoom = async (joinCode : string) => {
+    await connect();
+    navigate(`/room/${joinCode}`)
+  }
 
+  useEffect(() => {
+    if (playerRoom?.roomCode?.trim())
+      joinRoom(playerRoom.roomCode);
+
+  }, [playerRoom, navigate]);
 
   return (
     <div className="flex h-full w-full justify-center items-center">
@@ -67,7 +73,7 @@ function LobbyPage() {
                   <span className="text-lg" >{room.name}</span>
                   <span  className="text-lg">{room.roomMaster}</span>
                   <button
-                    onClick={() => navigate(`/room/${room.joinCode}`)}
+                    onClick={() => joinRoom(room.joinCode)}
                     className="hover:scale-105 cursor-pointer"
                   >
                   <img
