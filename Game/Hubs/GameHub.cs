@@ -82,7 +82,6 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string roomKey = $"room:{request.RoomCode}";
-        _logger.LogInformation(roomKey);
         Room room = await GetEntity<Room>(roomKey);
 
         PlayerSlot playerSlot = room.GetPlayerSlot(userId);
@@ -436,12 +435,42 @@ public class GameHub : Hub
         
         return playerName.Username;
     }
-    
 
-    public async Task LeaveRoom(string roomCode)
+
+    public async Task Disconnect()
     {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomCode);
+        IDatabase db = _redis.GetDatabase();
 
-        await Clients.Group(roomCode).SendAsync("Send", $"{Context.ConnectionId} has left the room {roomCode}.");
+        long userId = GetUserId();
+        string userRoomKey = $"user_room:{userId}";
+
+        string? roomCode = await db.StringGetAsync(userRoomKey);
+        if (string.IsNullOrEmpty(roomCode))
+            throw new KeyNotFoundException($"User with id {userId} is not in a room");
+
+        await db.KeyDeleteAsync(userRoomKey);
+
+        string roomKey = $"room:{roomCode}";
+        Room room = await GetEntity<Room>(roomKey);
+        bool gameHasStarted = room.IsPlayer1Ready && room.IsPlayer2Ready;
+
+        if (!gameHasStarted && room.GetPlayerSlot(userId) == PlayerSlot.Player2)
+        {
+            room.Player2Name = string.Empty;
+            room.Player2 = 0;
+            room.IsPlayer2Ready = false;
+
+            await Clients.Caller.SendAsync("Disconnect");
+            return;
+        }
+
+        if (gameHasStarted)
+        {
+            string gameKey = $"game:{roomCode}";
+            await db.KeyDeleteAsync(gameKey);
+        }
+        await db.KeyDeleteAsync(roomKey);
+        await Clients.Group(roomCode).SendAsync("Disconnect");
     }
+    
 }
