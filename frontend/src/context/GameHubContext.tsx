@@ -155,6 +155,16 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }))
     });
 
+    connection.on("Player2LeaveRoom", () => {
+      setData(prev => ({ ...prev,
+        allPlayerData: {...prev.allPlayerData,
+          player2 : 0,
+          player2Name : "",
+          isPlayer2Ready: false
+        }
+      }))
+    });
+
     connection.on("Disconnect", async () => {
       if (connection) {
         setData(prev => ({ ...prev, isLoading: true })); // start loading

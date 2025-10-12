@@ -58,6 +58,8 @@ public class GameHub : Hub
             room.Player2Name = await _userService.GetUsername(userId);
             playerSlot = PlayerSlot.Player2;
             await UpdateEntity<Room>(roomKey, room);
+            IDatabase db = _redis.GetDatabase();
+            await db.StringSetAsync($"user_room:{userId}", request.RoomCode);
         }
 
         if (playerSlot == PlayerSlot.None)
@@ -461,6 +463,7 @@ public class GameHub : Hub
             room.IsPlayer2Ready = false;
 
             await Clients.Caller.SendAsync("Disconnect");
+            await Clients.Group(roomCode).SendAsync("Player2LeaveRoom");
             return;
         }
 
@@ -469,6 +472,7 @@ public class GameHub : Hub
             string gameKey = $"game:{roomCode}";
             await db.KeyDeleteAsync(gameKey);
         }
+        await db.KeyDeleteAsync($"user_room:{room.Player2}");
         await db.KeyDeleteAsync(roomKey);
         await Clients.Group(roomCode).SendAsync("Disconnect");
     }
