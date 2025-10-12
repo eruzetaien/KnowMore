@@ -44,7 +44,7 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
     IDatabase db = redis.GetDatabase();
 
     string joinCode = Util.GetRandomCode();
-    string roomKey = $"room:{joinCode}";
+    string roomKey = $"{RedisConstant.RoomPrefix}{joinCode}";
     Room room = new()
     {
         JoinCode = joinCode,
@@ -60,8 +60,8 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
     int ttlInMinutes = 10;
     await db.StringSetAsync(roomKey, roomJson, TimeSpan.FromMinutes(ttlInMinutes));
     var expiryAt = DateTimeOffset.UtcNow.AddMinutes(ttlInMinutes).ToUnixTimeSeconds();
-    await db.SortedSetAddAsync("rooms:index", roomKey, expiryAt);
-    await db.StringSetAsync($"user_room:{userId}", joinCode);
+    await db.SortedSetAddAsync(RedisConstant.RoomSetKey, roomKey, expiryAt);
+    await db.StringSetAsync($"{RedisConstant.UserRoomPrefix}{userId}", joinCode);
 
     return Results.Ok(new { room.JoinCode });
 })
@@ -76,11 +76,11 @@ app.MapGet("/rooms", async (ClaimsPrincipal userClaim, IConnectionMultiplexer re
     IDatabase db = redis.GetDatabase();
     long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-    RedisValue[] expiredKeys = await db.SortedSetRangeByScoreAsync("rooms:index", double.NegativeInfinity, now - 1);
+    RedisValue[] expiredKeys = await db.SortedSetRangeByScoreAsync(RedisConstant.RoomSetKey, double.NegativeInfinity, now - 1);
     if (expiredKeys.Length > 0)
-        await db.SortedSetRemoveAsync("rooms:index", expiredKeys);
+        await db.SortedSetRemoveAsync(RedisConstant.RoomSetKey, expiredKeys);
 
-    RedisValue[] validKeys = await db.SortedSetRangeByScoreAsync("rooms:index", now, double.PositiveInfinity);
+    RedisValue[] validKeys = await db.SortedSetRangeByScoreAsync(RedisConstant.RoomSetKey, now, double.PositiveInfinity);
     RedisKey[] redisKeys = validKeys.Select(v => (RedisKey)v.ToString()).ToArray();
     RedisValue[] roomJsons = await db.StringGetAsync(redisKeys);
 
@@ -102,7 +102,7 @@ app.MapGet("/rooms", async (ClaimsPrincipal userClaim, IConnectionMultiplexer re
     }
 
     if (hasStartedRoomKeys.Count > 0)
-        await db.SortedSetRemoveAsync("rooms:index", hasStartedRoomKeys.ToArray());
+        await db.SortedSetRemoveAsync(RedisConstant.RoomSetKey, hasStartedRoomKeys.ToArray());
 
     return Results.Ok(rooms);
 })
@@ -115,7 +115,7 @@ app.MapGet("/rooms/user", async (ClaimsPrincipal userClaim, IConnectionMultiplex
         return Results.Unauthorized();
 
     IDatabase db = redis.GetDatabase();
-    string? roomCode = await db.StringGetAsync($"user_room:{userId}");
+    string? roomCode = await db.StringGetAsync($"{RedisConstant.UserRoomPrefix}{userId}");
 
     if (string.IsNullOrEmpty(roomCode))
         return Results.NotFound(new { message = "User is not in any room." });

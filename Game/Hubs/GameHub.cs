@@ -40,7 +40,7 @@ public class GameHub : Hub
     {
         long userId = GetUserId();
 
-        string roomKey = $"room:{request.RoomCode}";
+        string roomKey = $"{RedisConstant.RoomPrefix}{request.RoomCode}";
         Room room = await GetEntity<Room>(roomKey);
 
         PlayerSlot playerSlot = PlayerSlot.None;
@@ -59,7 +59,7 @@ public class GameHub : Hub
             playerSlot = PlayerSlot.Player2;
             await UpdateEntity<Room>(roomKey, room);
             IDatabase db = _redis.GetDatabase();
-            await db.StringSetAsync($"user_room:{userId}", request.RoomCode);
+            await db.StringSetAsync($"{RedisConstant.UserRoomPrefix}{userId}", request.RoomCode);
         }
 
         if (playerSlot == PlayerSlot.None)
@@ -83,7 +83,7 @@ public class GameHub : Hub
     {
         long userId = GetUserId();
 
-        string roomKey = $"room:{request.RoomCode}";
+        string roomKey = $"{RedisConstant.RoomPrefix}{request.RoomCode}";
         Room room = await GetEntity<Room>(roomKey);
 
         PlayerSlot playerSlot = room.GetPlayerSlot(userId);
@@ -104,7 +104,7 @@ public class GameHub : Hub
         if (room.IsPlayer1Ready && room.IsPlayer2Ready)
         {
             GameData game = await CreateGameData(room, roomKey);
-            string gameKey = $"game:{game.RoomCode}";
+            string gameKey = $"{RedisConstant.GamePrefix}{game.RoomCode}";
             await InitPreparationPhase(game, gameKey);
         }
     }
@@ -113,7 +113,7 @@ public class GameHub : Hub
     {
         long userId = GetUserId();
 
-        string gameKey = $"game:{request.RoomCode}";
+        string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
         GameData game = await GetEntity<GameData>(gameKey);
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
 
@@ -125,7 +125,7 @@ public class GameHub : Hub
     {
         long userId = GetUserId();
         
-        string gameKey = $"game:{request.RoomCode}";
+        string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
         GameData game = await GetEntity<GameData>(gameKey);
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
         if (playerSlot == PlayerSlot.Player1)
@@ -156,7 +156,7 @@ public class GameHub : Hub
     {
         long userId = GetUserId();
 
-        string gameKey = $"game:{request.RoomCode}";
+        string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
         GameData game = await GetEntity<GameData>(gameKey);
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
         if (playerSlot == PlayerSlot.Player1)
@@ -199,7 +199,7 @@ public class GameHub : Hub
     {
         long userId = GetUserId();
 
-        string gameKey = $"game:{request.RoomCode}";
+        string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
         GameData game = await GetEntity<GameData>(gameKey);
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
         if (playerSlot == PlayerSlot.Player1)
@@ -224,7 +224,7 @@ public class GameHub : Hub
     
     private async Task<GameData> CreateGameData(Room room, string roomKey)
     {
-        string gameKey = $"game:{room.JoinCode}";
+        string gameKey = $"{RedisConstant.GamePrefix}{room.JoinCode}";
         GameData game = new()
         {
             RoomCode = room.JoinCode,
@@ -444,7 +444,7 @@ public class GameHub : Hub
         IDatabase db = _redis.GetDatabase();
 
         long userId = GetUserId();
-        string userRoomKey = $"user_room:{userId}";
+        string userRoomKey = $"{RedisConstant.UserRoomPrefix}{userId}";
 
         string? roomCode = await db.StringGetAsync(userRoomKey);
         if (string.IsNullOrEmpty(roomCode))
@@ -452,7 +452,7 @@ public class GameHub : Hub
 
         await db.KeyDeleteAsync(userRoomKey);
 
-        string roomKey = $"room:{roomCode}";
+        string roomKey = $"{RedisConstant.RoomPrefix}{roomCode}";
         Room room = await GetEntity<Room>(roomKey);
         bool gameHasStarted = room.IsPlayer1Ready && room.IsPlayer2Ready;
 
@@ -469,10 +469,10 @@ public class GameHub : Hub
 
         if (gameHasStarted)
         {
-            string gameKey = $"game:{roomCode}";
+            string gameKey = $"{RedisConstant.GamePrefix}{roomCode}";
             await db.KeyDeleteAsync(gameKey);
         }
-        await db.KeyDeleteAsync($"user_room:{room.Player2}");
+        await db.KeyDeleteAsync($"{RedisConstant.UserRoomPrefix}{room.Player2}");
         await db.KeyDeleteAsync(roomKey);
         await Clients.Group(roomCode).SendAsync("Disconnect");
     }
