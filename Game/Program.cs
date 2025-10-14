@@ -94,9 +94,13 @@ app.MapGet("/rooms", async (ClaimsPrincipal userClaim, IConnectionMultiplexer re
             if (room is null)
                 continue;
 
-            if (room.Player1 != 0 && room.Player2 != 0)
+            if (room.HasGameStarted)
+            {
                 hasStartedRoomKeys.Add(roomJson);
-            else
+                continue;
+            }
+
+            if ( room.Player2 == 0)
                 rooms.Add(new RoomDto(room));
         }
     }

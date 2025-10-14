@@ -23,6 +23,7 @@ public class Room : HasPlayersBase
     public required string Name { get; set; }
     public bool IsPlayer1Ready { get; set; }
     public bool IsPlayer2Ready { get; set; }
+    public bool HasGameStarted { get; set; }
 }
 
 public class GameData : HasPlayersBase

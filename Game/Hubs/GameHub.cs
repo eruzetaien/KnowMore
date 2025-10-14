@@ -96,12 +96,14 @@ public class GameHub : Hub
         else
             room.IsPlayer2Ready = request.IsReady;
 
+        room.HasGameStarted = room.IsPlayer1Ready && room.IsPlayer2Ready;
+
         await UpdateEntity<Room>(roomKey, room);
         
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
                 new { room.IsPlayer1Ready, room.IsPlayer2Ready });
 
-        if (room.IsPlayer1Ready && room.IsPlayer2Ready)
+        if (room.HasGameStarted)
         {
             GameData game = await CreateGameData(room, roomKey);
             string gameKey = $"{RedisConstant.GamePrefix}{game.RoomCode}";
@@ -454,20 +456,20 @@ public class GameHub : Hub
 
         string roomKey = $"{RedisConstant.RoomPrefix}{roomCode}";
         Room room = await GetEntity<Room>(roomKey);
-        bool gameHasStarted = room.IsPlayer1Ready && room.IsPlayer2Ready;
 
-        if (!gameHasStarted && room.GetPlayerSlot(userId) == PlayerSlot.Player2)
+        if (!room.HasGameStarted && room.GetPlayerSlot(userId) == PlayerSlot.Player2)
         {
             room.Player2Name = string.Empty;
             room.Player2 = 0;
             room.IsPlayer2Ready = false;
+            await UpdateEntity<Room>(roomKey, room);
 
             await Clients.Caller.SendAsync("Disconnect");
             await Clients.Group(roomCode).SendAsync("Player2LeaveRoom");
             return;
         }
 
-        if (gameHasStarted)
+        if (!room.HasGameStarted)
         {
             string gameKey = $"{RedisConstant.GamePrefix}{roomCode}";
             await db.KeyDeleteAsync(gameKey);
