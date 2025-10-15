@@ -9,24 +9,24 @@ using Microsoft.EntityFrameworkCore;
 public class GameHub : Hub
 {
 
-    private readonly IConnectionMultiplexer _redis;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<GameHub> _logger;
-    private readonly FactDb _db; 
+    private readonly FactDb _db;
     private readonly UserService _userService;
+    private readonly RedisService _redisService;
 
     public GameHub(
-        IConnectionMultiplexer redis,
         IHttpClientFactory httpClientFactory,
         ILogger<GameHub> logger,
         FactDb db,
-        UserService userService)
+        UserService userService,
+        RedisService redisService)
     {
-        _redis = redis;
         _httpClientFactory = httpClientFactory;
         _logger = logger;
         _db = db;
         _userService = userService;
+        _redisService = redisService;
     }
 
     public override async Task OnConnectedAsync()
@@ -41,7 +41,7 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string roomKey = $"{RedisConstant.RoomPrefix}{request.RoomCode}";
-        Room room = await GetEntity<Room>(roomKey);
+        Room room = await _redisService.GetAsync<Room>(roomKey);
 
         PlayerSlot playerSlot = PlayerSlot.None;
         if (room.Player1 == userId)
@@ -57,9 +57,8 @@ public class GameHub : Hub
             room.Player2 = userId;
             room.Player2Name = await _userService.GetUsername(userId);
             playerSlot = PlayerSlot.Player2;
-            await UpdateEntity<Room>(roomKey, room);
-            IDatabase db = _redis.GetDatabase();
-            await db.StringSetAsync($"{RedisConstant.UserRoomPrefix}{userId}", request.RoomCode);
+            await _redisService.UpdateAsync<Room>(roomKey, room);
+            await _redisService.SetAsync($"{RedisConstant.UserRoomPrefix}{userId}", request.RoomCode);
         }
 
         if (playerSlot == PlayerSlot.None)
@@ -84,7 +83,7 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string roomKey = $"{RedisConstant.RoomPrefix}{request.RoomCode}";
-        Room room = await GetEntity<Room>(roomKey);
+        Room room = await _redisService.GetAsync<Room>(roomKey);
 
         PlayerSlot playerSlot = room.GetPlayerSlot(userId);
 
@@ -98,7 +97,7 @@ public class GameHub : Hub
 
         room.HasGameStarted = room.IsPlayer1Ready && room.IsPlayer2Ready;
 
-        await UpdateEntity<Room>(roomKey, room);
+        await _redisService.UpdateAsync<Room>(roomKey, room);
         
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
                 new { room.IsPlayer1Ready, room.IsPlayer2Ready });
@@ -116,7 +115,7 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
-        GameData game = await GetEntity<GameData>(gameKey);
+        GameData game = await _redisService.GetAsync<GameData>(gameKey);
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
 
         await Clients.Group(request.RoomCode).SendAsync("ReceiveEmoticon",
@@ -128,7 +127,7 @@ public class GameHub : Hub
         long userId = GetUserId();
         
         string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
-        GameData game = await GetEntity<GameData>(gameKey);
+        GameData game = await _redisService.GetAsync<GameData>(gameKey);
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
         if (playerSlot == PlayerSlot.Player1)
         {
@@ -145,7 +144,7 @@ public class GameHub : Hub
         else
             throw new HubException("You are not a participant in this game");
            
-        await UpdateEntity<GameData>(gameKey, game);
+        await _redisService.UpdateAsync<GameData>(gameKey, game);
         
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
                 new { game.IsPlayer1Ready, game.IsPlayer2Ready });
@@ -159,7 +158,7 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
-        GameData game = await GetEntity<GameData>(gameKey);
+        GameData game = await _redisService.GetAsync<GameData>(gameKey);
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
         if (playerSlot == PlayerSlot.Player1)
         {
@@ -174,7 +173,7 @@ public class GameHub : Hub
         else
             throw new HubException("You are not a participant in this game");
 
-        await UpdateEntity<GameData>(gameKey, game);
+        await _redisService.UpdateAsync<GameData>(gameKey, game);
 
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
                 new { game.IsPlayer1Ready, game.IsPlayer2Ready });
@@ -202,7 +201,7 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
-        GameData game = await GetEntity<GameData>(gameKey);
+        GameData game = await _redisService.GetAsync<GameData>(gameKey);
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
         if (playerSlot == PlayerSlot.Player1)
         {
@@ -215,7 +214,7 @@ public class GameHub : Hub
         else
             throw new HubException("You are not a participant in this game");
 
-        await UpdateEntity<GameData>(gameKey, game);
+        await _redisService.UpdateAsync<GameData>(gameKey, game);
 
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
                 new { game.IsPlayer1Ready, game.IsPlayer2Ready });
@@ -238,9 +237,8 @@ public class GameHub : Hub
         string gameJson = JsonSerializer.Serialize(game);
 
         int ttlInMinutes = 30;
-        IDatabase db = _redis.GetDatabase();
-        await db.StringSetAsync(gameKey, gameJson, TimeSpan.FromMinutes(ttlInMinutes));
-        await db.KeyDeleteAsync(roomKey);
+        await _redisService.SetAsync(gameKey, gameJson, TimeSpan.FromMinutes(ttlInMinutes));
+        await _redisService.DeleteAsync(roomKey);
 
         return game;
     }
@@ -263,7 +261,7 @@ public class GameHub : Hub
                 game.PlayerFactDescriptionMap.Add(fact.Id, fact.Description);
         }
 
-        await UpdateEntity<GameData>(gameKey, game);
+        await _redisService.UpdateAsync<GameData>(gameKey, game);
 
         await Clients.User(game.Player1.ToString()).SendAsync("InitPreparationPhase",
             new { playerFacts = game.Player1Facts });
@@ -278,7 +276,7 @@ public class GameHub : Hub
     private async Task InitPlayingPhase(GameData game, string gameKey)
     {
         game.IsPlayer1Ready = game.IsPlayer2Ready = false;
-        await UpdateEntity<GameData>(gameKey, game);
+        await _redisService.UpdateAsync<GameData>(gameKey, game);
 
         var player1Statements = new List<Object>();
         for (int i = 0; i < game.Player1Statements.Length; i++)
@@ -325,7 +323,7 @@ public class GameHub : Hub
         game.Player1Score += isPlayer1Correct ? 1 : 0;
         game.Player2Score += isPlayer2Correct ? 1 : 0;
 
-        await UpdateEntity<GameData>(gameKey, game);
+        await _redisService.UpdateAsync<GameData>(gameKey, game);
 
         var player1rewardStatement = isPlayer1Correct
             ? await GetRewardStatements(game.Player2Statements, game.Player1)
@@ -400,32 +398,6 @@ public class GameHub : Hub
         return rewards;
     }
 
-    private async Task<T> GetEntity<T>(string key)
-    {
-        IDatabase db = _redis.GetDatabase();
-        RedisValue value = await db.StringGetAsync(key);
-
-        if (!value.HasValue)
-            throw new HubException($"{typeof(T).Name} not found");
-
-        try
-        {
-            return JsonSerializer.Deserialize<T>(value!)
-                ?? throw new HubException($"{typeof(T).Name} data corrupted");
-        }
-        catch (JsonException)
-        {
-            throw new HubException($"{typeof(T).Name} data corrupted");
-        }
-    }
-
-    private async Task UpdateEntity<T>(string key, T entity)
-    {
-        IDatabase db = _redis.GetDatabase();
-        string updatedJson = JsonSerializer.Serialize(entity);
-        await db.StringSetAsync(key, updatedJson);
-    }
-
     private async Task<string> GetPlayerName(long userId)
     {
         HttpClient client = _httpClientFactory.CreateClient("UserService");
@@ -443,26 +415,24 @@ public class GameHub : Hub
 
     public async Task Disconnect()
     {
-        IDatabase db = _redis.GetDatabase();
-
         long userId = GetUserId();
         string userRoomKey = $"{RedisConstant.UserRoomPrefix}{userId}";
 
-        string? roomCode = await db.StringGetAsync(userRoomKey);
+        string? roomCode = await _redisService.GetAsync<string>(userRoomKey);
         if (string.IsNullOrEmpty(roomCode))
             throw new KeyNotFoundException($"User with id {userId} is not in a room");
 
-        await db.KeyDeleteAsync(userRoomKey);
+        await _redisService.DeleteAsync(userRoomKey);
 
         string roomKey = $"{RedisConstant.RoomPrefix}{roomCode}";
-        Room room = await GetEntity<Room>(roomKey);
+        Room room = await _redisService.GetAsync<Room>(roomKey);
 
         if (!room.HasGameStarted && room.GetPlayerSlot(userId) == PlayerSlot.Player2)
         {
             room.Player2Name = string.Empty;
             room.Player2 = 0;
             room.IsPlayer2Ready = false;
-            await UpdateEntity<Room>(roomKey, room);
+            await _redisService.UpdateAsync<Room>(roomKey, room);
 
             await Clients.Caller.SendAsync("Disconnect");
             await Clients.Group(roomCode).SendAsync("Player2LeaveRoom");
@@ -472,10 +442,10 @@ public class GameHub : Hub
         if (!room.HasGameStarted)
         {
             string gameKey = $"{RedisConstant.GamePrefix}{roomCode}";
-            await db.KeyDeleteAsync(gameKey);
+            await _redisService.DeleteAsync(gameKey);
         }
-        await db.KeyDeleteAsync($"{RedisConstant.UserRoomPrefix}{room.Player2}");
-        await db.KeyDeleteAsync(roomKey);
+        await _redisService.DeleteAsync($"{RedisConstant.UserRoomPrefix}{room.Player2}");
+        await _redisService.DeleteAsync(roomKey);
         await Clients.Group(roomCode).SendAsync("Disconnect");
     }
     

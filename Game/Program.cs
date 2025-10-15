@@ -25,6 +25,7 @@ builder.Services.AddHttpClient("UserService", client =>
     client.DefaultRequestHeaders.Add("X-API-KEY", Environment.GetEnvironmentVariable("API_KEY"));
 });
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<RedisService>();
 builder.Services.AddHostedService<UserEventSubscriber>();
 
 var app = builder.Build();
@@ -36,12 +37,10 @@ app.UseAuthorization();
 app.MapHub<GameHub>("/gamehub")
    .RequireAuthorization();
 
-app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto, IConnectionMultiplexer redis, UserService userService) =>
+app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto, RedisService redisService, UserService userService) =>
 {
     if (!userClaim.TryGetUserId(out long userId))
         return Results.Unauthorized();
-
-    IDatabase db = redis.GetDatabase();
 
     string joinCode = Util.GetRandomCode();
     string roomKey = $"{RedisConstant.RoomPrefix}{joinCode}";
@@ -55,34 +54,35 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
         IsPlayer1Ready = false,
         IsPlayer2Ready = false,
     };
-    string roomJson = JsonSerializer.Serialize(room);
 
     int ttlInMinutes = 10;
-    await db.StringSetAsync(roomKey, roomJson, TimeSpan.FromMinutes(ttlInMinutes));
+    await redisService.SetAsync(roomKey, room, TimeSpan.FromMinutes(ttlInMinutes));
+
     var expiryAt = DateTimeOffset.UtcNow.AddMinutes(ttlInMinutes).ToUnixTimeSeconds();
-    await db.SortedSetAddAsync(RedisConstant.RoomSetKey, roomKey, expiryAt);
-    await db.StringSetAsync($"{RedisConstant.UserRoomPrefix}{userId}", joinCode);
+    await redisService.AddToSortedSetAsync(RedisConstant.RoomSetKey, roomKey, expiryAt);
+
+    await redisService.SetAsync($"{RedisConstant.UserRoomPrefix}{userId}", joinCode);
 
     return Results.Ok(new { room.JoinCode });
 })
 .RequireAuthorization()
 .AddEndpointFilter<ValidationFilter<CreateRoomDto>>();
 
-app.MapGet("/rooms", async (ClaimsPrincipal userClaim, IConnectionMultiplexer redis) =>
+app.MapGet("/rooms", async (ClaimsPrincipal userClaim, RedisService redisService) =>
 {
     if (!userClaim.TryGetUserId(out long userId))
         return Results.Unauthorized();
 
-    IDatabase db = redis.GetDatabase();
+    
     long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-    RedisValue[] expiredKeys = await db.SortedSetRangeByScoreAsync(RedisConstant.RoomSetKey, double.NegativeInfinity, now - 1);
+    RedisValue[] expiredKeys = await redisService.GetRangeByScoreAsync(RedisConstant.RoomSetKey, double.NegativeInfinity, now - 1);
     if (expiredKeys.Length > 0)
-        await db.SortedSetRemoveAsync(RedisConstant.RoomSetKey, expiredKeys);
+        await redisService.RemoveFromSortedSetAsync(RedisConstant.RoomSetKey, expiredKeys);
 
-    RedisValue[] validKeys = await db.SortedSetRangeByScoreAsync(RedisConstant.RoomSetKey, now, double.PositiveInfinity);
+    RedisValue[] validKeys = await redisService.GetRangeByScoreAsync(RedisConstant.RoomSetKey, now, double.PositiveInfinity);
     RedisKey[] redisKeys = validKeys.Select(v => (RedisKey)v.ToString()).ToArray();
-    RedisValue[] roomJsons = await db.StringGetAsync(redisKeys);
+    RedisValue[] roomJsons = await redisService.GetManyAsync(redisKeys.Select(v => v.ToString()));
 
     List<RoomDto> rooms = [];
     List<RedisValue> hasStartedRoomKeys = [];
@@ -106,20 +106,20 @@ app.MapGet("/rooms", async (ClaimsPrincipal userClaim, IConnectionMultiplexer re
     }
 
     if (hasStartedRoomKeys.Count > 0)
-        await db.SortedSetRemoveAsync(RedisConstant.RoomSetKey, hasStartedRoomKeys.ToArray());
+        await redisService.RemoveFromSortedSetAsync(RedisConstant.RoomSetKey, hasStartedRoomKeys.ToArray());
 
     return Results.Ok(rooms);
 })
 .RequireAuthorization();
 
 
-app.MapGet("/rooms/user", async (ClaimsPrincipal userClaim, IConnectionMultiplexer redis) =>
+app.MapGet("/rooms/user", async (ClaimsPrincipal userClaim, RedisService redisService) =>
 {
     if (!userClaim.TryGetUserId(out long userId))
         return Results.Unauthorized();
 
-    IDatabase db = redis.GetDatabase();
-    string? roomCode = await db.StringGetAsync($"{RedisConstant.UserRoomPrefix}{userId}");
+    
+    string? roomCode = await redisService.GetAsync<string>($"{RedisConstant.UserRoomPrefix}{userId}");
 
     if (string.IsNullOrEmpty(roomCode))
         return Results.NotFound(new { message = "User is not in any room." });
