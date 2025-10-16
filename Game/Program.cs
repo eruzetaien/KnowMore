@@ -118,11 +118,17 @@ app.MapGet("/rooms/user", async (ClaimsPrincipal userClaim, RedisService redisSe
     if (!userClaim.TryGetUserId(out long userId))
         return Results.Unauthorized();
 
-    
-    string? roomCode = await redisService.GetAsync<string>($"{RedisConstant.UserRoomPrefix}{userId}");
+    string userRoomKey = $"{RedisConstant.UserRoomPrefix}{userId}";
+    string? roomCode = await redisService.GetAsync<string>(userRoomKey);
 
     if (string.IsNullOrEmpty(roomCode))
         return Results.NotFound(new { message = "User is not in any room." });
+
+    if (!await redisService.ExistsAsync($"{RedisConstant.RoomPrefix}{roomCode}"))
+    {
+        await redisService.DeleteAsync(userRoomKey);
+        return Results.NotFound(new { message = "User is not in any room." });
+    }
 
     return Results.Ok(new { roomCode });
 })
