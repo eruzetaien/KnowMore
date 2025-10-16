@@ -12,12 +12,12 @@ public class RedisService
         _db = _redis.GetDatabase();
     }
 
-    public async Task<T> GetAsync<T>(string key)
+    public async Task<T?> GetAsync<T>(string key)
     {
         RedisValue value = await _db.StringGetAsync(key);
 
         if (!value.HasValue)
-            throw new InvalidOperationException($"{typeof(T).Name} not found");
+            return default!;
 
         try
         {

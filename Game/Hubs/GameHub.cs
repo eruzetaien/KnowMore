@@ -41,7 +41,7 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string roomKey = $"{RedisConstant.RoomPrefix}{request.RoomCode}";
-        Room room = await _redisService.GetAsync<Room>(roomKey);
+        Room room = await _redisService.GetAsync<Room>(roomKey) ?? throw new HubException($"Room not found");
 
         PlayerSlot playerSlot = PlayerSlot.None;
         if (room.Player1 == userId)
@@ -83,7 +83,7 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string roomKey = $"{RedisConstant.RoomPrefix}{request.RoomCode}";
-        Room room = await _redisService.GetAsync<Room>(roomKey);
+        Room room = await _redisService.GetAsync<Room>(roomKey) ?? throw new HubException($"Room not found");;
 
         PlayerSlot playerSlot = room.GetPlayerSlot(userId);
 
@@ -115,7 +115,7 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
-        GameData game = await _redisService.GetAsync<GameData>(gameKey);
+        GameData game = await _redisService.GetAsync<GameData>(gameKey) ?? throw new HubException($"Game Data not found");;
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
 
         await Clients.Group(request.RoomCode).SendAsync("ReceiveEmoticon",
@@ -127,7 +127,7 @@ public class GameHub : Hub
         long userId = GetUserId();
         
         string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
-        GameData game = await _redisService.GetAsync<GameData>(gameKey);
+        GameData game = await _redisService.GetAsync<GameData>(gameKey) ?? throw new HubException($"Game Data not found");;
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
         if (playerSlot == PlayerSlot.Player1)
         {
@@ -158,7 +158,7 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
-        GameData game = await _redisService.GetAsync<GameData>(gameKey);
+        GameData game = await _redisService.GetAsync<GameData>(gameKey) ?? throw new HubException($"Game Data not found");;
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
         if (playerSlot == PlayerSlot.Player1)
         {
@@ -201,7 +201,7 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
-        GameData game = await _redisService.GetAsync<GameData>(gameKey);
+        GameData game = await _redisService.GetAsync<GameData>(gameKey) ?? throw new HubException($"Game Data not found");
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
         if (playerSlot == PlayerSlot.Player1)
         {
@@ -425,7 +425,7 @@ public class GameHub : Hub
         await _redisService.DeleteAsync(userRoomKey);
 
         string roomKey = $"{RedisConstant.RoomPrefix}{roomCode}";
-        Room room = await _redisService.GetAsync<Room>(roomKey);
+        Room room = await _redisService.GetAsync<Room>(roomKey) ?? throw new HubException($"Room not found");
 
         if (!room.HasGameStarted && room.GetPlayerSlot(userId) == PlayerSlot.Player2)
         {
