@@ -398,21 +398,6 @@ public class GameHub : Hub
         return rewards;
     }
 
-    private async Task<string> GetPlayerName(long userId)
-    {
-        HttpClient client = _httpClientFactory.CreateClient("UserService");
-        HttpResponseMessage response = await client.GetAsync($"/internal/users/{userId}/name");
-        if (!response.IsSuccessStatusCode)
-            throw new KeyNotFoundException($"User with id {userId} is not found");
-
-        UserNameDto? playerName = await response.Content.ReadFromJsonAsync<UserNameDto>();
-        if (playerName == null)
-            throw new InvalidOperationException("API response did not contain a valid UserNameDto.");
-        
-        return playerName.Username;
-    }
-
-
     public async Task Disconnect()
     {
         long userId = GetUserId();
