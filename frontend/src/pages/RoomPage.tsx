@@ -7,10 +7,12 @@ import player2Idle from "../assets/players/player2-idle.png";
 import yellowButton from "../assets/buttons/yellow-button.svg";
 import cancelButton from "../assets/buttons/cancel-button.svg";
 import PlayerCard from "../components/PlayerCard";
+import { PlayerSlot } from "../types/playerType";
 
 function RoomPage() {
   const { roomCode } = useParams();
-  const { connected, disconnect, room, allPlayerData, isLoading, joinRoom, setReadyStateToStartGame } = useGameHub();
+  const { connected, room, allPlayerData, playerData, isLoading, 
+    disconnect, joinRoom, setReadyStateToStartGame, kickPlayer } = useGameHub();
 
   const [ready, setReady] = useState(false);
   const navigate = useNavigate();
@@ -37,6 +39,8 @@ function RoomPage() {
 
   if (isLoading) return <p>Connecting to game hub...</p>;
 
+  console.log(playerData.slot);
+
   return (
     <div className="flex flex-col items-center justify-between p-12">
 
@@ -60,6 +64,7 @@ function RoomPage() {
           isReady={allPlayerData.isPlayer2Ready}
           sprite={player2Idle}
           isFlipped={true}
+          onKick={playerData.slot == PlayerSlot.Player1 ?() => kickPlayer(room.joinCode) : undefined}
         />
       </div>
       

@@ -65,7 +65,7 @@ public class GameHub : Hub
             throw new HubException("Room is full or you are not allowed to join");
 
         await Groups.AddToGroupAsync(Context.ConnectionId, request.RoomCode);
-        await Clients.Caller.SendAsync("PlayerJoined", new { Role = playerSlot });
+        await Clients.Caller.SendAsync("PlayerJoined", new { Slot = playerSlot });
         await Clients.Group(request.RoomCode).SendAsync("ReceiveRoomUpdate", new RoomDto(room));
         await Clients.Group(request.RoomCode).SendAsync("InitPlayer", new
         {
@@ -396,6 +396,26 @@ public class GameHub : Hub
         }
 
         return rewards;
+    }
+
+    public async Task KickPlayer(RoomRequest request)
+    {
+        long userId = GetUserId();
+        string roomKey = $"{RedisConstant.RoomPrefix}{request.RoomCode}";
+        Room room = await _redisService.GetAsync<Room>(roomKey) ?? throw new HubException($"Room not found");
+
+        if (room.GetPlayerSlot(userId) != PlayerSlot.Player1)
+            return;
+            
+        await _redisService.DeleteAsync($"{RedisConstant.UserRoomPrefix}{room.Player2}");
+
+        room.Player2Name = string.Empty;
+        room.Player2 = 0;
+        room.IsPlayer2Ready = false;
+        await _redisService.UpdateAsync<Room>(roomKey, room);
+
+        await Clients.Group(request.RoomCode).SendAsync("Player2LeaveRoom");
+        await Clients.Group(request.RoomCode).SendAsync("Player2Kicked");
     }
 
     public async Task Disconnect()

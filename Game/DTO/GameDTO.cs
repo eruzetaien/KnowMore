@@ -36,10 +36,12 @@ public enum GamePhase
     Result = 3,
 }
 
-public class JoinRoomRequest()
+public class RoomRequest
 {
     public string RoomCode { get; set; } = string.Empty;
 }
+
+public class JoinRoomRequest : RoomRequest {}
 
 public class SetPlayerReadyStateRequest()
 {

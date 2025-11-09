@@ -27,6 +27,7 @@ type GameHubContextType = GameHubData & {
   sendAnswer:  (roomCode: string, answerIdx: number) => Promise<void>;
   sendRewardChoice: (factId: number) => Promise<void>;
   setReadyStateForNextGame: (roomCode: string, isReady: boolean) => Promise<void>;
+  kickPlayer: (roomCode: string) => Promise<void>;
 };
 
 const gameHubDataInit = {
@@ -151,7 +152,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     connection.on("PlayerJoined", (response: JoinRoomResponse) => {
       setData(prev => ({ ...prev,
-        playerData: {slot:response.playerSlot}
+        playerData: {slot:response.slot}
       }))
     });
 
@@ -163,6 +164,18 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
           isPlayer2Ready: false
         }
       }))
+    });
+
+    connection.on("Player2Kicked", async () => {
+      if (data.playerData.slot != PlayerSlot.Player2)
+        return;
+      
+      if (connection) {
+        setData(prev => ({ ...prev, isLoading: true })); // start loading
+        await connection.stop();
+        connection = null;
+        setData(gameHubDataInit); // stop loading
+      }
     });
 
     connection.on("Disconnect", async () => {
@@ -242,6 +255,13 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [invokeWithConnection]
   );
 
+  const kickPlayer = useCallback(
+    async (roomCode: string) => {
+      await invokeWithConnection("KickPlayer", {roomCode});
+    },
+    [invokeWithConnection]
+  );
+
   const disconnect = useCallback(
     async () => {
       await invokeWithConnection("Disconnect" );
@@ -266,7 +286,14 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   return (
     <GameHubContext.Provider
-      value={{ ...data, connect, disconnect, joinRoom, setReadyStateToStartGame, sendEmoticon, sendStatements, sendAnswer, sendRewardChoice, setReadyStateForNextGame }}
+      value={{ ...data, connect, disconnect, joinRoom, 
+        setReadyStateToStartGame, 
+        sendEmoticon, 
+        sendStatements, 
+        sendAnswer, 
+        sendRewardChoice, 
+        setReadyStateForNextGame,
+        kickPlayer }}
     >
       {children}
     </GameHubContext.Provider>

@@ -12,7 +12,7 @@ export interface CreateRoomRequest {
 }
 
 export interface JoinRoomResponse {
-  playerSlot: PlayerSlot;
+  slot: PlayerSlot;
 }
 
 export interface PlayerRoomResponse {
