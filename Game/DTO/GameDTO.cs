@@ -18,7 +18,7 @@ public class RoomDto
     {
         JoinCode = room.JoinCode;
         Name = room.Name;
-        RoomMaster = room.Player1Name;
+        RoomMaster = room.Player1.Name;
     }
 }
 

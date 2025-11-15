@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 public enum PlayerSlot
 {
     None = 0,
@@ -5,15 +7,28 @@ public enum PlayerSlot
     Player2 = 2
 }
 
+public class PlayerData
+{
+    public long Id { get; set; }
+    public string Name { get; set; }  = string.Empty;
+    public bool IsReady { get; set;}
+}
+
 public abstract class HasPlayersBase
 {
-    public long Player1 { get; set; }
-    public long Player2 { get; set; }
-    public string Player1Name { get; set; } = string.Empty;
-    public string Player2Name { get; set; } = string.Empty;
+    public required PlayerData Player1;
+    public PlayerData? Player2;
 
-    public PlayerSlot GetPlayerSlot(long userId) =>
-        userId == Player1 ? PlayerSlot.Player1 : userId == Player2 ? PlayerSlot.Player2 : PlayerSlot.None;
+    public PlayerSlot GetPlayerSlot(long userId)
+    {
+        if (Player1.Id == userId)
+            return PlayerSlot.Player1;
+
+        if (Player2?.Id == userId)
+            return PlayerSlot.Player2;
+
+        return PlayerSlot.None;
+    }
 }
 
 
@@ -21,8 +36,6 @@ public class Room : HasPlayersBase
 {
     public required string JoinCode { get; set; }
     public required string Name { get; set; }
-    public bool IsPlayer1Ready { get; set; }
-    public bool IsPlayer2Ready { get; set; }
     public bool HasGameStarted { get; set; }
 }
 
@@ -37,8 +50,6 @@ public class GameData : HasPlayersBase
     public int Player2Answer { get; set; }
     public int Player1Score { get; set; }
     public int Player2Score { get; set; }
-    public bool IsPlayer1Ready { get; set; }
-    public bool IsPlayer2Ready { get; set; }
     public List<FactGroupDTO> Player1Facts { get; set; } = [];
     public List<FactGroupDTO> Player2Facts { get; set; } = [];
     public Dictionary<long, string> PlayerFactDescriptionMap { get; set; } = [];

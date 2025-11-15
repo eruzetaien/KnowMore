@@ -44,15 +44,17 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
 
     string joinCode = Util.GetRandomCode();
     string roomKey = $"{RedisConstant.RoomPrefix}{joinCode}";
+    PlayerData player1 = new()
+    {
+        Id = userId,
+        Name = await userService.GetUsername(userId),
+    };
     Room room = new()
     {
         JoinCode = joinCode,
         Name = createDto.Name,
-        Player1 = userId,
-        Player1Name = await userService.GetUsername(userId),
-        Player2 = 0,
-        IsPlayer1Ready = false,
-        IsPlayer2Ready = false,
+        Player1 = player1,
+        Player2 = null,
     };
 
     int ttlInMinutes = 10;
@@ -100,7 +102,7 @@ app.MapGet("/rooms", async (ClaimsPrincipal userClaim, RedisService redisService
                 continue;
             }
 
-            if ( room.Player2 == 0)
+            if ( room.Player2 == null)
                 rooms.Add(new RoomDto(room));
         }
     }

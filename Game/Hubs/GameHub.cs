@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
-using StackExchange.Redis;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -44,21 +43,26 @@ public class GameHub : Hub
         Room room = await _redisService.GetAsync<Room>(roomKey) ?? throw new HubException($"Room not found");
 
         PlayerSlot playerSlot = PlayerSlot.None;
-        if (room.Player1 == userId)
+        if (room.Player1.Id == userId)
         {
             playerSlot = PlayerSlot.Player1;
         }
-        else if (room.Player2 == userId)
+        else if (room.Player2?.Id == userId)
         {
             playerSlot = PlayerSlot.Player2;
         }
-        else if (room.Player2 == 0)
+        else if (room.Player2 == null)
         {
-            room.Player2 = userId;
-            room.Player2Name = await _userService.GetUsername(userId);
-            playerSlot = PlayerSlot.Player2;
+            PlayerData player2 = new()
+            {
+                Id = userId,
+                Name = await _userService.GetUsername(userId),
+            };
+            room.Player2 = player2;
             await _redisService.UpdateAsync<Room>(roomKey, room);
             await _redisService.SetAsync($"{RedisConstant.UserRoomPrefix}{userId}", request.RoomCode);
+
+            playerSlot = PlayerSlot.Player2;
         }
 
         if (playerSlot == PlayerSlot.None)
@@ -71,10 +75,6 @@ public class GameHub : Hub
         {
             room.Player1,
             room.Player2,
-            room.Player1Name,
-            room.Player2Name,
-            room.IsPlayer1Ready,
-            room.IsPlayer2Ready,
         });
     }
     
@@ -91,16 +91,16 @@ public class GameHub : Hub
             throw new HubException("Player is invalid");
 
         if (playerSlot == PlayerSlot.Player1)
-            room.IsPlayer1Ready = request.IsReady;
+            room.Player1.IsReady = request.IsReady;
         else
-            room.IsPlayer2Ready = request.IsReady;
+            room.Player2!.IsReady = request.IsReady;
 
-        room.HasGameStarted = room.IsPlayer1Ready && room.IsPlayer2Ready;
+        room.HasGameStarted = room.Player1.IsReady && room.Player2!.IsReady;
 
         await _redisService.UpdateAsync<Room>(roomKey, room);
         
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
-                new { room.IsPlayer1Ready, room.IsPlayer2Ready });
+                new { IsPlayer1Ready=room.Player1.IsReady, IsPlayer2Ready=room.Player2!.IsReady });
 
         if (room.HasGameStarted)
         {
@@ -133,13 +133,13 @@ public class GameHub : Hub
         {
             game.Player1Lie = request.Lie;
             game.Player1Statements = Util.BuildPlayerStatements(request.FactId1, request.FactId2);
-            game.IsPlayer1Ready = true;
+            game.Player1.IsReady = true;
         }
         else if (playerSlot == PlayerSlot.Player2)
         {
             game.Player2Lie = request.Lie;
             game.Player2Statements = Util.BuildPlayerStatements(request.FactId1, request.FactId2);
-            game.IsPlayer2Ready = true;
+            game.Player2!.IsReady = true;
         }
         else
             throw new HubException("You are not a participant in this game");
@@ -147,9 +147,9 @@ public class GameHub : Hub
         await _redisService.UpdateAsync<GameData>(gameKey, game);
         
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
-                new { game.IsPlayer1Ready, game.IsPlayer2Ready });
+                new { IsPlayer1Ready=game.Player1.IsReady, IsPlayer2Ready=game.Player2!.IsReady });
 
-        if (game.IsPlayer1Ready && game.IsPlayer2Ready)
+        if (game.Player1.IsReady && game.Player2!.IsReady)
             await InitPlayingPhase(game, gameKey);
     }
 
@@ -163,12 +163,12 @@ public class GameHub : Hub
         if (playerSlot == PlayerSlot.Player1)
         {
             game.Player1Answer = request.answerIdx;
-            game.IsPlayer1Ready = true;
+            game.Player1.IsReady = true;
         }
         else if (playerSlot == PlayerSlot.Player2)
         {
             game.Player2Answer = request.answerIdx;
-            game.IsPlayer2Ready = true;
+            game.Player2!.IsReady = true;
         }
         else
             throw new HubException("You are not a participant in this game");
@@ -176,9 +176,9 @@ public class GameHub : Hub
         await _redisService.UpdateAsync<GameData>(gameKey, game);
 
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
-                new { game.IsPlayer1Ready, game.IsPlayer2Ready });
+                new { IsPlayer1Ready=game.Player1.IsReady, IsPlayer2Ready=game.Player2!.IsReady });
 
-        if (game.IsPlayer1Ready && game.IsPlayer2Ready)
+        if (game.Player1.IsReady && game.Player2!.IsReady)
             await InitResultPhase(game, gameKey);
     }
     
@@ -205,11 +205,11 @@ public class GameHub : Hub
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
         if (playerSlot == PlayerSlot.Player1)
         {
-            game.IsPlayer1Ready = true;
+            game.Player1.IsReady = true;
         }
         else if (playerSlot == PlayerSlot.Player2)
         {
-            game.IsPlayer2Ready = true;
+            game.Player2!.IsReady = true;
         }
         else
             throw new HubException("You are not a participant in this game");
@@ -217,9 +217,9 @@ public class GameHub : Hub
         await _redisService.UpdateAsync<GameData>(gameKey, game);
 
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
-                new { game.IsPlayer1Ready, game.IsPlayer2Ready });
+                new { IsPlayer1Ready=game.Player1.IsReady, IsPlayer2Ready=game.Player2!.IsReady });
 
-        if (game.IsPlayer1Ready && game.IsPlayer2Ready)
+        if (game.Player1.IsReady && game.Player2!.IsReady)
             await InitPreparationPhase(game, gameKey);
     }
     
@@ -231,8 +231,6 @@ public class GameHub : Hub
             RoomCode = room.JoinCode,
             Player1 = room.Player1,
             Player2 = room.Player2,
-            Player1Name = room.Player1Name,
-            Player2Name = room.Player2Name
         };
         string gameJson = JsonSerializer.Serialize(game);
 
@@ -245,28 +243,28 @@ public class GameHub : Hub
 
     private async Task InitPreparationPhase(GameData game, string gameKey)
     { 
-        game.IsPlayer1Ready = game.IsPlayer2Ready = false;
+        game.Player1.IsReady = game.Player2!.IsReady = false;
 
         if (game.Player1Facts.Count <= 0)
         { 
-            game.Player1Facts = await GetAllPlayerFact(game.Player1);
+            game.Player1Facts = await GetAllPlayerFact(game.Player1.Id);
             foreach (FactDTO fact in game.Player1Facts.SelectMany(g => g.Facts))
                 game.PlayerFactDescriptionMap.Add(fact.Id, fact.Description);
         }
 
         if (game.Player2Facts.Count <= 0)
         { 
-            game.Player2Facts = await GetAllPlayerFact(game.Player2);
+            game.Player2Facts = game.Player2 != null ? await GetAllPlayerFact(game.Player2.Id) : [] ;
             foreach (FactDTO fact in game.Player2Facts.SelectMany(g => g.Facts))
                 game.PlayerFactDescriptionMap.Add(fact.Id, fact.Description);
         }
 
         await _redisService.UpdateAsync<GameData>(gameKey, game);
 
-        await Clients.User(game.Player1.ToString()).SendAsync("InitPreparationPhase",
+        await Clients.User(game.Player1.Id.ToString()).SendAsync("InitPreparationPhase",
             new { playerFacts = game.Player1Facts });
-
-        await Clients.User(game.Player2.ToString()).SendAsync("InitPreparationPhase",
+        
+        await Clients.User(game.Player2!.Id.ToString()).SendAsync("InitPreparationPhase",
             new { playerFacts = game.Player2Facts });
 
         await Clients.Group(game.RoomCode).SendAsync("SetGamePhase",
@@ -275,7 +273,7 @@ public class GameHub : Hub
 
     private async Task InitPlayingPhase(GameData game, string gameKey)
     {
-        game.IsPlayer1Ready = game.IsPlayer2Ready = false;
+        game.Player1.IsReady = game.Player2!.IsReady = false;
         await _redisService.UpdateAsync<GameData>(gameKey, game);
 
         var player1Statements = new List<Object>();
@@ -290,7 +288,7 @@ public class GameHub : Hub
             player1Statements.Add(new { idx = i, description = desc });
         }
         // Send Player 1 statement to Player 2, its opponent
-        await Clients.User(game.Player2.ToString()).SendAsync("InitPlayingPhase",
+        await Clients.User(game.Player2!.Id.ToString()).SendAsync("InitPlayingPhase",
             new { OpponentStatements = player1Statements });
 
         var player2Statements = new List<Object>();
@@ -305,7 +303,7 @@ public class GameHub : Hub
             player2Statements.Add(new { idx = i, description = desc });
         }
         // Send Player 2 statement to Player 1, its opponent
-        await Clients.User(game.Player1.ToString()).SendAsync("InitPlayingPhase",
+        await Clients.User(game.Player1.Id.ToString()).SendAsync("InitPlayingPhase",
             new { OpponentStatements = player2Statements });
 
         await Clients.Group(game.RoomCode).SendAsync("SetGamePhase",
@@ -314,7 +312,7 @@ public class GameHub : Hub
 
     private async Task InitResultPhase(GameData game, string gameKey)
     { 
-        game.IsPlayer1Ready = game.IsPlayer2Ready = false;
+        game.Player1.IsReady = game.Player2!.IsReady = false;
 
         // Assess player answer
         bool isPlayer1Correct = game.Player2Statements[game.Player1Answer] == 0;
@@ -326,14 +324,14 @@ public class GameHub : Hub
         await _redisService.UpdateAsync<GameData>(gameKey, game);
 
         var player1rewardStatement = isPlayer1Correct
-            ? await GetRewardStatements(game.Player2Statements, game.Player1)
+            ? await GetRewardStatements(game.Player2Statements, game.Player1.Id)
             : new List<object>();
 
         var player2rewardStatement = isPlayer2Correct
-            ? await GetRewardStatements(game.Player1Statements, game.Player2)
+            ? await GetRewardStatements(game.Player1Statements, game.Player2!.Id)
             : new List<object>();
 
-        await Clients.User(game.Player1.ToString()).SendAsync("InitResultPhase",
+        await Clients.User(game.Player1.Id.ToString()).SendAsync("InitResultPhase",
             new
             {
                 isPlayerCorrect = isPlayer1Correct,
@@ -341,7 +339,7 @@ public class GameHub : Hub
                 player1Score = game.Player1Score,
                 player2Score = game.Player2Score,
             });
-        await Clients.User(game.Player2.ToString()).SendAsync("InitResultPhase",
+        await Clients.User(game.Player2!.Id.ToString()).SendAsync("InitResultPhase",
             new
             {
                 isPlayerCorrect = isPlayer2Correct,
@@ -409,9 +407,7 @@ public class GameHub : Hub
             
         await _redisService.DeleteAsync($"{RedisConstant.UserRoomPrefix}{room.Player2}");
 
-        room.Player2Name = string.Empty;
-        room.Player2 = 0;
-        room.IsPlayer2Ready = false;
+        room.Player2 = null;
         await _redisService.UpdateAsync<Room>(roomKey, room);
 
         await Clients.Group(request.RoomCode).SendAsync("Player2LeaveRoom");
@@ -434,9 +430,7 @@ public class GameHub : Hub
 
         if (!room.HasGameStarted && room.GetPlayerSlot(userId) == PlayerSlot.Player2)
         {
-            room.Player2Name = string.Empty;
-            room.Player2 = 0;
-            room.IsPlayer2Ready = false;
+            room.Player2 = null;
             await _redisService.UpdateAsync<Room>(roomKey, room);
 
             await Clients.Caller.SendAsync("Disconnect");
