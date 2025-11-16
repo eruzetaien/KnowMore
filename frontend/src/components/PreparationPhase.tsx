@@ -56,9 +56,9 @@ export default function PreparationPhase() {
       {/* Player State */}
       <div className="flex justify-between w-11/12">
         <PlayerState
-          name={allPlayerData.player1Name}
+          name={allPlayerData.player1.name}
           score={allPlayerData.player1Score}
-          isReady={allPlayerData.isPlayer1Ready}
+          isReady={allPlayerData.player1.isReady}
           chillingImg={player1Chilling}
           thinkingImg={player1Thinking}
         />
@@ -78,9 +78,9 @@ export default function PreparationPhase() {
           </div>
         </div>
         <PlayerState
-          name={allPlayerData.player2Name}
+          name={allPlayerData.player2?.name}
           score={allPlayerData.player2Score}
-          isReady={allPlayerData.isPlayer2Ready}
+          isReady={allPlayerData.player2?.isReady ?? false}
           chillingImg={player2Chilling}
           thinkingImg={player2Thinking}
           isFlipped={true}

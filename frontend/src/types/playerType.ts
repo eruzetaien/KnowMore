@@ -12,16 +12,18 @@ export const Emoticon = {
 export type Emoticon = (typeof Emoticon)[keyof typeof Emoticon];
 
 export interface PlayerData {
+  id: number;
+  name: string;
+  isReady: boolean;
+}
+
+export interface ClientPlayerData {
   slot: PlayerSlot;
 }
 
 export interface AllPlayerData {
-  player1: number;
-  player2: number;
-  player1Name: string;
-  player2Name: string;
-  isPlayer1Ready: boolean;
-  isPlayer2Ready: boolean;
+  player1: PlayerData;
+  player2: PlayerData | null ;
   player1Emot: Emoticon;
   player2Emot: Emoticon;
   player1Score: number;

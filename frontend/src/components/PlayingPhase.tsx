@@ -18,8 +18,8 @@ export default function PlayingPhase() {
 
   // Determine if this player already submitted an answer
   const isAlreadyAnswered =
-    (playerRole === "Player1" && allPlayerData.isPlayer1Ready) ||
-    (playerRole === "Player2" && allPlayerData.isPlayer2Ready);
+    (playerRole === "Player1" && allPlayerData.player1.isReady) ||
+    (playerRole === "Player2" && allPlayerData.player1.isReady);
 
   return (
     <div>
@@ -60,8 +60,8 @@ export default function PlayingPhase() {
       </button>
 
       <div className="mt-6">
-        <p>Player 1 ready: {allPlayerData.isPlayer1Ready ? "✅" : "❌"}</p>
-        <p>Player 2 ready: {allPlayerData.isPlayer2Ready ? "✅" : "❌"}</p>
+        <p>Player 1 ready: {allPlayerData.player1.isReady ? "✅" : "❌"}</p>
+        <p>Player 2 ready: {allPlayerData.player2?.isReady ? "✅" : "❌"}</p>
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ import { PlayerSlot } from "../types/playerType";
 
 function RoomPage() {
   const { roomCode } = useParams();
-  const { connected, room, allPlayerData, playerData, isLoading, 
+  const { connected, room, allPlayerData, clientPlayerData, isLoading, 
     disconnect, joinRoom, setReadyStateToStartGame, kickPlayer } = useGameHub();
 
   const [ready, setReady] = useState(false);
@@ -34,12 +34,10 @@ function RoomPage() {
     setReadyStateToStartGame(room.joinCode, newState); // if GameHub provides ready state update
   };
 
-  if (allPlayerData.isPlayer1Ready && allPlayerData.isPlayer2Ready) 
+  if (allPlayerData.player1.isReady && allPlayerData.player2?.isReady) 
     navigate(`/game/${roomCode}`);
 
   if (isLoading) return <p>Connecting to game hub...</p>;
-
-  console.log(playerData.slot);
 
   return (
     <div className="flex flex-col items-center justify-between p-12">
@@ -55,16 +53,16 @@ function RoomPage() {
       {/* Players Card */}
       <div className="flex justify-center w-full gap-32 mb-12">
         <PlayerCard
-          name={allPlayerData.player1Name}
-          isReady={allPlayerData.isPlayer1Ready}
+          name={allPlayerData.player1.name}
+          isReady={allPlayerData.player1.isReady}
           sprite={player1Idle}
         />
         <PlayerCard
-          name={allPlayerData.player2Name}
-          isReady={allPlayerData.isPlayer2Ready}
+          name={allPlayerData.player2?.name}
+          isReady={allPlayerData.player2?.isReady ?? false}
           sprite={player2Idle}
           isFlipped={true}
-          onKick={playerData.slot == PlayerSlot.Player1 ?() => kickPlayer(room.joinCode) : undefined}
+          onKick={clientPlayerData.slot == PlayerSlot.Player1 ?() => kickPlayer(room.joinCode) : undefined}
         />
       </div>
       

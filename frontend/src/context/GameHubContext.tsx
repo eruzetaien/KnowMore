@@ -3,13 +3,13 @@ import * as signalR from "@microsoft/signalr";
 import type { JoinRoomResponse, RoomResponse } from "../types/roomType";
 import type { GameData, InitPlayerResponse, InitPlayingPhaseResponse, InitPreparationPhaseResponse, InitResultPhaseResponse, PlayingPhaseData, PreparationPhaseData, ResultPhaseData, SetGamePhaseResponse } from "../types/gameType";
 import { GamePhase } from "../types/gameType";
-import { Emoticon, PlayerSlot, type AllPlayerData, type PlayerData, type PlayerReadinessResponse, type SendEmoticonResponse } from "../types/playerType";
+import { Emoticon, PlayerSlot, type AllPlayerData, type ClientPlayerData, type PlayerReadinessResponse, type SendEmoticonResponse } from "../types/playerType";
 
 type GameHubData = {
   connected: boolean;
   room: RoomResponse;
   isLoading: boolean;
-  playerData: PlayerData;
+  clientPlayerData: ClientPlayerData;
   allPlayerData: AllPlayerData;
   game: GameData;
   preparationPhaseData: PreparationPhaseData;
@@ -34,7 +34,7 @@ const gameHubDataInit = {
   connected: false,
   room: {} as RoomResponse,
   isLoading: false,   
-  playerData: {} as PlayerData,
+  clientPlayerData: {} as ClientPlayerData,
   allPlayerData: {} as AllPlayerData,
   game: {phase: GamePhase.None} as GameData,
   preparationPhaseData: {} as PreparationPhaseData,
@@ -69,25 +69,25 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (response.playerSlot == PlayerSlot.Player1) {
         setData(prev => ({
           ...prev,
-          playerData: { ...prev.playerData, player1Emot: response.emoticon }
+          playerData: { ...prev.clientPlayerData, player1Emot: response.emoticon }
         }));
 
         setTimeout(() => {
           setData(prev => ({
             ...prev,
-            emoticon: { ...prev.playerData, player1Emot: Emoticon.None }
+            emoticon: { ...prev.clientPlayerData, player1Emot: Emoticon.None }
           }));
         }, 1200);
       } else if (response.playerSlot == PlayerSlot.Player2) {
         setData(prev => ({
           ...prev,
-          emoticon: { ...prev.playerData, player2Emot: response.emoticon }
+          emoticon: { ...prev.clientPlayerData, player2Emot: response.emoticon }
         }));
 
         setTimeout(() => {
           setData(prev => ({
             ...prev,
-            emoticon: { ...prev.playerData, player2Emot: Emoticon.None }
+            emoticon: { ...prev.clientPlayerData, player2Emot: Emoticon.None }
           }));
         }, 1200);
       }
@@ -107,10 +107,6 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
         allPlayerData: { ...prev.allPlayerData,
           player1 : response.player1,
           player2 : response.player2,
-          player1Name : response.player1Name,
-          player2Name : response.player2Name, 
-          isPlayer1Ready : response.isPlayer1Ready,
-          isPlayer2Ready : response.isPlayer2Ready,
         }
       }))
     });
@@ -159,15 +155,13 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
     connection.on("Player2LeaveRoom", () => {
       setData(prev => ({ ...prev,
         allPlayerData: {...prev.allPlayerData,
-          player2 : 0,
-          player2Name : "",
-          isPlayer2Ready: false
+          player2 : null
         }
       }))
     });
 
     connection.on("Player2Kicked", async () => {
-      if (data.playerData.slot != PlayerSlot.Player2)
+      if (data.clientPlayerData.slot != PlayerSlot.Player2)
         return;
       
       if (connection) {
@@ -310,7 +304,12 @@ export const useGameHub = () => {
 function resetPlayerReadiness(prev: AllPlayerData) : AllPlayerData{
   return {
     ...prev,
-    isPlayer1Ready: false,
-    isPlayer2Ready: false,
+    player1: {
+      ...prev.player1,
+      isReady: false,
+    },
+    player2: prev.player2
+      ? { ...prev.player2, isReady: false }
+      : null,
   };
 }
