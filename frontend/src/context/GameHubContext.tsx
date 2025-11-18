@@ -109,6 +109,8 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
           player2 : response.player2,
         }
       }))
+      console.log(response)
+      console.log(data.allPlayerData)
     });
 
     connection.on("InitPreparationPhase", (response: InitPreparationPhaseResponse) => {
@@ -173,12 +175,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     connection.on("Disconnect", async () => {
-      if (connection) {
-        setData(prev => ({ ...prev, isLoading: true })); // start loading
-        await connection.stop();
-        connection = null;
-        setData(gameHubDataInit); // stop loading
-      }
+      clientDisconnect();
     });
 
     await connection.start();
