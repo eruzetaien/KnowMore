@@ -16,7 +16,9 @@ public class PlayerData
 
 public abstract class HasPlayersBase
 {
+    [JsonInclude]
     public required PlayerData Player1;
+    [JsonInclude]
     public PlayerData? Player2;
 
     public PlayerSlot GetPlayerSlot(long userId)
