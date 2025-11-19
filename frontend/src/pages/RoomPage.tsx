@@ -34,7 +34,7 @@ function RoomPage() {
     setReadyStateToStartGame(room.joinCode, newState); // if GameHub provides ready state update
   };
 
-  if (allPlayerData.player1.isReady && allPlayerData.player2?.isReady) 
+  if (allPlayerData.player1?.isReady && allPlayerData.player2?.isReady) 
     navigate(`/game/${roomCode}`);
 
   if (isLoading) return <p>Connecting to game hub...</p>;
@@ -53,8 +53,8 @@ function RoomPage() {
       {/* Players Card */}
       <div className="flex justify-center w-full gap-32 mb-12">
         <PlayerCard
-          name={allPlayerData.player1.name}
-          isReady={allPlayerData.player1.isReady}
+          name={allPlayerData.player1?.name}
+          isReady={allPlayerData.player1?.isReady ?? false}
           sprite={player1Idle}
         />
         <PlayerCard

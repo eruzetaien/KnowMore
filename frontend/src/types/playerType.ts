@@ -22,7 +22,7 @@ export interface ClientPlayerData {
 }
 
 export interface AllPlayerData {
-  player1: PlayerData;
+  player1: PlayerData | null ;
   player2: PlayerData | null ;
   player1Emot: Emoticon;
   player2Emot: Emoticon;

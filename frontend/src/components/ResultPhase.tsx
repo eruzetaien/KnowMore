@@ -96,13 +96,13 @@ export default function ResultPhase() {
           <div className="grid grid-cols-2 gap-4 mb-8">
             <div className="flex flex-col items-center p-4 bg-gray-800 rounded-xl">
               <h2 className="font-semibold">Master</h2>
-              <p className="mt-2">{allPlayerData.player1.id ?? "-"}</p>
+              <p className="mt-2">{allPlayerData.player1?.id ?? "-"}</p>
               <span
                 className={`text-xs mt-1 ${
-                  allPlayerData.player1.isReady ? "text-green-400" : "text-red-400"
+                  allPlayerData.player1?.isReady ? "text-green-400" : "text-red-400"
                 }`}
               >
-                {allPlayerData.player1.isReady ? "Ready" : "Not Ready"}
+                {allPlayerData.player1?.isReady ? "Ready" : "Not Ready"}
               </span>
 
             </div>
