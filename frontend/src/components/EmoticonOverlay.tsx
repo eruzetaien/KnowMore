@@ -1,13 +1,13 @@
 // EmoticonsOverlay.tsx
 import { useGameHub } from "../context/GameHubContext";
 import emot1 from "../assets/emoticons/emot1.png";
-import { Emoticon } from "../types/playerType";
+import { Emoticon, PlayerSlot } from "../types/playerType";
 
 export default function EmoticonsOverlay() {
-  const { room, allPlayerData, sendEmoticon } = useGameHub();
+  const { room, allPlayerData, clientPlayerData, sendEmoticon } = useGameHub();
 
-  const isPlayer1 = localStorage.getItem("player") === "Player1";
-  const isPlayer2 = localStorage.getItem("player") === "Player2";
+  const isPlayer1 = clientPlayerData.slot == PlayerSlot.Player1;
+  const isPlayer2 = clientPlayerData.slot == PlayerSlot.Player2;
 
   return (
     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4">

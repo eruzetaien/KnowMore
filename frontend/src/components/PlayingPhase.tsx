@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { useGameHub } from "../context/GameHubContext";
+import { PlayerSlot } from "../types/playerType";
 
 export default function PlayingPhase() {
-  const { playingPhaseData, allPlayerData, isLoading: hubLoading, room, sendAnswer } = useGameHub();
+  const { playingPhaseData, allPlayerData, clientPlayerData, isLoading: hubLoading, room, sendAnswer } = useGameHub();
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
   if (hubLoading) return <p>Loading hub connection...</p>;
   if (!playingPhaseData) return <p>No playing phase data yet...</p>;
-
-  const playerRole = localStorage.getItem("player"); // "Player1" or "Player2"
 
   const handleSubmit = () => {
     if (selectedIdx !== null) {
@@ -18,8 +17,8 @@ export default function PlayingPhase() {
 
   // Determine if this player already submitted an answer
   const isAlreadyAnswered =
-    (playerRole === "Player1" && allPlayerData.player1?.isReady) ||
-    (playerRole === "Player2" && allPlayerData.player2?.isReady);
+    (clientPlayerData.slot == PlayerSlot.Player1 && allPlayerData.player1?.isReady) ||
+    (clientPlayerData.slot == PlayerSlot.Player2 && allPlayerData.player2?.isReady);
 
   return (
     <div>
