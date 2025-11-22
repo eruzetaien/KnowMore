@@ -19,6 +19,13 @@ export const apiRequest = async <T>(
 
   const response = await fetch(url, fetchOptions);
 
+  if (response.status === 401) {
+    if (window.location.pathname !== "/login") {
+      window.location.href = "/login";
+    }
+    throw new Error("Unauthorized - redirecting to login");
+  }
+
   try {
     const result = await response.json();
     return result;
