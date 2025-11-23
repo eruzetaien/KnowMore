@@ -162,18 +162,6 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }))
     });
 
-    connection.on("Player2Kicked", async () => {
-      if (data.clientPlayerData.slot != PlayerSlot.Player2)
-        return;
-      
-      if (connection) {
-        setData(prev => ({ ...prev, isLoading: true })); // start loading
-        await connection.stop();
-        connection = null;
-        setData(gameHubDataInit); // stop loading
-      }
-    });
-
     connection.on("Disconnect", async () => {
       clientDisconnect();
     });

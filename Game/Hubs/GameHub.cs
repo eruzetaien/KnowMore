@@ -405,13 +405,14 @@ public class GameHub : Hub
         if (room.GetPlayerSlot(userId) != PlayerSlot.Player1)
             return;
             
-        await _redisService.DeleteAsync($"{RedisConstant.UserRoomPrefix}{room.Player2}");
+        await _redisService.DeleteAsync($"{RedisConstant.UserRoomPrefix}{room.Player2!.Id}");
 
+        string player2Id = room.Player2!.Id.ToString();
         room.Player2 = null;
         await _redisService.UpdateAsync<Room>(roomKey, room);
 
+        await Clients.User(player2Id).SendAsync("Disconnect");
         await Clients.Group(request.RoomCode).SendAsync("Player2LeaveRoom");
-        await Clients.Group(request.RoomCode).SendAsync("Player2Kicked");
     }
 
     public async Task Disconnect()
