@@ -150,7 +150,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     connection.on("PlayerJoined", (response: JoinRoomResponse) => {
       setData(prev => ({ ...prev,
-        playerData: {slot:response.slot}
+        clientPlayerData: {slot:response.slot}
       }))
     });
 
@@ -267,6 +267,11 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       connection = null;
       setData(gameHubDataInit); // stop loading
     }
+
+    if (window.location.pathname !== "/lobby") {
+      window.location.href = "/lobby";
+    }
+
   }, []);
 
   useEffect(() => {
