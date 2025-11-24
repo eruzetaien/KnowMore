@@ -1,3 +1,5 @@
+import { redirectIfNotOn } from "../utils/redirect";
+
 export const apiRequest = async <T>(
   url: string,
   method: string,
@@ -20,9 +22,8 @@ export const apiRequest = async <T>(
   const response = await fetch(url, fetchOptions);
 
   if (response.status === 401) {
-    if (window.location.pathname !== "/login") {
-      window.location.href = "/login";
-    }
+    redirectIfNotOn("/login");
+   
     throw new Error("Unauthorized - redirecting to login");
   }
 

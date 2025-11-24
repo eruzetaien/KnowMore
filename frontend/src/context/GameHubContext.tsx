@@ -4,6 +4,7 @@ import type { JoinRoomResponse, RoomResponse } from "../types/roomType";
 import type { GameData, InitPlayerResponse, InitPlayingPhaseResponse, InitPreparationPhaseResponse, InitResultPhaseResponse, PlayingPhaseData, PreparationPhaseData, ResultPhaseData, SetGamePhaseResponse } from "../types/gameType";
 import { GamePhase } from "../types/gameType";
 import { Emoticon, PlayerSlot, type AllPlayerData, type ClientPlayerData, type PlayerReadinessResponse, type SendEmoticonResponse } from "../types/playerType";
+import { redirectIfNotOn } from "../utils/redirect";
 
 type GameHubData = {
   connected: boolean;
@@ -256,10 +257,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setData(gameHubDataInit); // stop loading
     }
 
-    if (window.location.pathname !== "/lobby") {
-      window.location.href = "/lobby";
-    }
-
+    redirectIfNotOn("/lobby");
   }, []);
 
   useEffect(() => {
