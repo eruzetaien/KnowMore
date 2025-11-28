@@ -3,7 +3,7 @@ import * as signalR from "@microsoft/signalr";
 import type { JoinRoomResponse, RoomResponse } from "../types/roomType";
 import type { GameData, InitPlayerResponse, InitPlayingPhaseResponse, InitPreparationPhaseResponse, InitResultPhaseResponse, PlayingPhaseData, PreparationPhaseData, ResultPhaseData, SetGamePhaseResponse } from "../types/gameType";
 import { GamePhase } from "../types/gameType";
-import { Emoticon, PlayerSlot, type AllPlayerData, type ClientPlayerData, type PlayerReadinessResponse, type SendEmoticonResponse } from "../types/playerType";
+import { type AllPlayerData, type ClientPlayerData, type PlayerReadinessResponse} from "../types/playerType";
 import { redirectIfNotOn } from "../utils/redirect";
 
 type GameHubData = {
@@ -23,7 +23,6 @@ type GameHubContextType = GameHubData & {
   disconnect: () => Promise<void>;
   joinRoom: (roomCode: string) => Promise<void>;
   setReadyStateToStartGame: (roomCode: string, isReady: boolean) => Promise<void>;
-  sendEmoticon: (roomCode: string, emoticon: Emoticon) => Promise<void>;
   sendStatements: (roomCode: string, lie: string, factId1: number, factId2: number) => Promise<void>;
   sendAnswer:  (roomCode: string, answerIdx: number) => Promise<void>;
   sendRewardChoice: (factId: number) => Promise<void>;
@@ -64,34 +63,6 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     connection.on("ReceiveRoomUpdate", (room: RoomResponse) => {
       setData(prev => ({ ...prev, room }));
-    });
-
-    connection.on("ReceiveEmoticon", (response: SendEmoticonResponse) => {
-      if (response.playerSlot == PlayerSlot.Player1) {
-        setData(prev => ({
-          ...prev,
-          playerData: { ...prev.clientPlayerData, player1Emot: response.emoticon }
-        }));
-
-        setTimeout(() => {
-          setData(prev => ({
-            ...prev,
-            emoticon: { ...prev.clientPlayerData, player1Emot: Emoticon.None }
-          }));
-        }, 1200);
-      } else if (response.playerSlot == PlayerSlot.Player2) {
-        setData(prev => ({
-          ...prev,
-          emoticon: { ...prev.clientPlayerData, player2Emot: response.emoticon }
-        }));
-
-        setTimeout(() => {
-          setData(prev => ({
-            ...prev,
-            emoticon: { ...prev.clientPlayerData, player2Emot: Emoticon.None }
-          }));
-        }, 1200);
-      }
     });
 
     connection.on("ReceivePlayerReadiness", (response: PlayerReadinessResponse) => {
@@ -200,13 +171,6 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [invokeWithConnection]
   );
 
-  const sendEmoticon = useCallback(
-    async (roomCode: string, emoticon: Emoticon) => {
-      await invokeWithConnection("SendEmoticon", {roomCode, emoticon});
-    },
-    [invokeWithConnection]
-  );
-
   const sendStatements = useCallback(
     async (roomCode: string, lie: string, factId1: number, factId2: number) => {
       await invokeWithConnection("SendStatements", {roomCode, lie, factId1, factId2});
@@ -270,7 +234,6 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
     <GameHubContext.Provider
       value={{ ...data, connect, disconnect, joinRoom, 
         setReadyStateToStartGame, 
-        sendEmoticon, 
         sendStatements, 
         sendAnswer, 
         sendRewardChoice, 

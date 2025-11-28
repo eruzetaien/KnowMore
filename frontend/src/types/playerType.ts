@@ -5,12 +5,6 @@ export const PlayerSlot = {
 } as const;
 export type PlayerSlot = (typeof PlayerSlot)[keyof typeof PlayerSlot];
 
-export const Emoticon = {
-  None: 0,
-  Shocked: 1,
-} as const;
-export type Emoticon = (typeof Emoticon)[keyof typeof Emoticon];
-
 export interface PlayerData {
   id: number;
   name: string;
@@ -24,8 +18,6 @@ export interface ClientPlayerData {
 export interface AllPlayerData {
   player1: PlayerData | null ;
   player2: PlayerData | null ;
-  player1Emot: Emoticon;
-  player2Emot: Emoticon;
   player1Score: number;
   player2Score: number;
 }
@@ -34,9 +26,4 @@ export interface AllPlayerData {
 export interface PlayerReadinessResponse{
   isPlayer1Ready: boolean;
   isPlayer2Ready: boolean; 
-}
-
-export interface SendEmoticonResponse {
-  playerSlot: PlayerSlot;
-  emoticon: Emoticon;
 }
