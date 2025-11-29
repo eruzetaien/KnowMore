@@ -43,6 +43,9 @@ public class RoomRequest
 
 public class JoinRoomRequest : RoomRequest {}
 
+public class KickPlayerRequest : RoomRequest {}
+
+
 public class SetPlayerReadyStateRequest()
 {
     public string RoomCode { get; set; } = string.Empty;

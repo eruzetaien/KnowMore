@@ -396,7 +396,7 @@ public class GameHub : Hub
         return rewards;
     }
 
-    public async Task KickPlayer(RoomRequest request)
+    public async Task KickPlayer(KickPlayerRequest request)
     {
         long userId = GetUserId();
         string roomKey = $"{RedisConstant.RoomPrefix}{request.RoomCode}";
