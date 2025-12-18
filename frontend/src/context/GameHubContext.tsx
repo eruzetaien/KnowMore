@@ -136,6 +136,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     connection.on("Disconnect", async () => {
       clientDisconnect();
+      redirectIfNotOn("/lobby");
     });
 
     await connection.start();
@@ -220,8 +221,6 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       connection = null;
       setData(gameHubDataInit); // stop loading
     }
-
-    redirectIfNotOn("/lobby");
   }, []);
 
   useEffect(() => {
