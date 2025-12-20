@@ -62,10 +62,19 @@ body {
   border-image-width:16px;
 }
 
+.border-coupon {
+  border: solid;
+  color: red;
+  border-image: url("assets/border-dynamic.svg");
+  border-image-slice: 33%;
+  border-image-width:16px;
+}
+
 .sprite {
   animation: play 1s steps(3) infinite;
   image-rendering: pixelated;
 }
+
 @keyframes play {
   from {
     background-position: 0% 0;

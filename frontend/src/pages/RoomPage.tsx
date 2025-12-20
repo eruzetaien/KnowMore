@@ -18,7 +18,6 @@ function RoomPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log(`client connected: ${connected}`)
     if (connected && roomCode) {
       joinRoom(roomCode);
     }

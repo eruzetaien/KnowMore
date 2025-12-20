@@ -81,8 +81,6 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
           player2 : response.player2,
         }
       }))
-      console.log(response)
-      console.log(data.allPlayerData)
     });
 
     connection.on("InitPreparationPhase", (response: InitPreparationPhaseResponse) => {
@@ -113,7 +111,6 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     connection.on("SetGamePhase", (response: SetGamePhaseResponse) => {
-      console.log("Game Phase: ", response.phase)
       setData(prev => ({...prev,
           game: {...prev.game, phase:response.phase},
           allPlayerData : resetPlayerReadiness(prev.allPlayerData)
@@ -141,18 +138,15 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     await connection.start();
     setData(prev => ({ ...prev, connected: true, isLoading: false })); // stop loading
-    console.log("GameHub Connected");
   }, [data.isLoading]);
 
   const invokeWithConnection = useCallback(
     async (method: string, ...args: any[]) => {
       if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
-        console.warn(`Connection not ready for ${method}`);
         return;
       }
 
       await connection.invoke(method, ...args);
-        console.log(`Invoked ${method}`, ...args);
       },
       
     [connect]
