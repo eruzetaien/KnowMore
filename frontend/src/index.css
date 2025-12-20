@@ -50,24 +50,21 @@ body {
 }
 
 .border-coupon-fill {
-  border: solid;
   border-image: url("assets/border-fill.svg");
   border-image-slice: 33%;
   border-image-width:16px;
 }
 .border-coupon-white {
-  border: solid;
   border-image: url("assets/border.svg");
   border-image-slice: 33%;
   border-image-width:16px;
 }
 
-.border-coupon {
-  border: solid;
-  color: red;
-  border-image: url("assets/border-dynamic.svg");
+.border-profile {
+  border : 32px solid;
+  border-image: url("assets/border-profile.svg");
   border-image-slice: 33%;
-  border-image-width:16px;
+  border-image-width: 32px;
 }
 
 .sprite {

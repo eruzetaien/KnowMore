@@ -7,11 +7,17 @@ const ProfilePage = () => {
   if (isError) return <p>Failed to load profile: {(error as Error).message}</p>;
 
   return (
-    <div>
-      <h2>{user?.username}</h2>
-      <p>{user?.description}</p>
-      {/* <small>Created at: {new Date(user!.createdAt).toLocaleString()}</small> */}
+    <div className="w-screen h-screen flex flex-col items-center justify-center">
+            <div className="w-1/3 min-w-[400px] border-profile">
+              <div className="bg-platinum p-4">
+                <div className="flex flex-col gap-y-1">
+                  <h2 className="text-3xl">{user?.username}</h2>
+                  <p className="text-l">{user?.description}</p>
+                </div>
+              </div>
+            </div>
     </div>
+    
   );
 };
 
