@@ -4,3 +4,8 @@ export interface UserResponse {
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
 }
+
+export interface UpdateProfileRequest {
+  username?: string;
+  description?: string;
+}
