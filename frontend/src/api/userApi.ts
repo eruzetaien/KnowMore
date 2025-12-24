@@ -12,6 +12,6 @@ export const updateProfile = async (
 ): Promise<UserResponse> => {
   const endpoint = `${import.meta.env.VITE_AUTH_BASE_URL}/update`;
 
-  return apiRequest<UserResponse>(endpoint, "PUT", requestBody);
+  return apiRequest<UserResponse>(endpoint, "PATCH", requestBody);
 };
 

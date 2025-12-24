@@ -139,7 +139,7 @@ app.MapGet("/me", async (ClaimsPrincipal userClaim, UserDb db) =>
 })
 .RequireAuthorization();
 
-app.MapPut("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDto, UserDb db, UserEventPublisher publisher) =>
+app.MapPatch("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDto, UserDb db, UserEventPublisher publisher) =>
 {
     if (!userClaim.TryGetUserId(out long userId))
         return Results.Unauthorized();
@@ -147,38 +147,38 @@ app.MapPut("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDto,
     var user = await db.Users.FindAsync(userId);
     if (user == null) return Results.NotFound();
 
-    string normalizedUsername = updateDto.Username.ToLowerInvariant();
-    // Validation
-    if (!string.IsNullOrWhiteSpace(updateDto.Username))
-    {
+    bool isThereAnyUpdate = false;
+    if(!string.IsNullOrWhiteSpace(updateDto.Username)){
+        string normalizedUsername = updateDto.Username.ToLowerInvariant();
+
         if (await db.Users.AnyAsync(u =>
             u.NormalizedUsername == normalizedUsername &&
             u.Id != userId))
         {
             return TypedResults.BadRequest($"Username '{updateDto.Username}' already exists.");
         }
+
+        if ( updateDto.Username != user.Username)
+        {
+            user.Username = updateDto.Username;
+            user.NormalizedUsername = normalizedUsername;
+            isThereAnyUpdate = true;
+        }
     }
 
-    // Update
-    bool usernameChanged = false;
-
-    // Update
-    if (!string.IsNullOrWhiteSpace(updateDto.Username) && updateDto.Username != user.Username)
-    {
-        user.Username = updateDto.Username;
-        user.NormalizedUsername = normalizedUsername;
-        usernameChanged = true;
+    if (!string.IsNullOrWhiteSpace(updateDto.Description)){
+        if ( updateDto.Description != user.Description)
+        {
+            user.Description = updateDto.Description;
+            isThereAnyUpdate = true;
+        }
     }
 
-    if (!string.IsNullOrWhiteSpace(updateDto.Description))
-        user.Description = updateDto.Description;
+    if (isThereAnyUpdate){
+        user.UpdatedAt = DateTime.UtcNow;
 
-    user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
 
-    await db.SaveChangesAsync();
-
-    if (usernameChanged)
-    {
         UserEvent userEvent = new(UserAction.Updated, userId, user.Username);
         await publisher.PublishUserCreated(userEvent);
     }

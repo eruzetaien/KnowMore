@@ -14,11 +14,11 @@ const ProfilePage = () => {
 
   const handleUsernameUpdate = () => {
     if (!username.trim()) return;
-    updateProfile({ username, description });
+    updateProfile({ username });
   };
 
   const handleDescriptionUpdate = () => {
-    updateProfile({ username, description });
+    updateProfile({ description });
   };
 
   useEffect(() => {
