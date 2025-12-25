@@ -2,6 +2,9 @@ import { useNavigate } from "react-router-dom";
 import { useProfileQuery } from "../hooks/useUserProfile";
 import { useEffect } from "react";
 
+import loginButton from "../assets/buttons/login-button.svg";
+
+
 function LoginPage() {
   const loginWithGoogle = () => {
     window.location.href = `${import.meta.env.VITE_AUTH_BASE_URL}/login/google`;
@@ -14,12 +17,19 @@ function LoginPage() {
     }
   }, [user]);
 
-  if (isLoading) return <p>Loading...</p>;
-
   return (
-    <button onClick={() => loginWithGoogle()}>
-      {"Continue with Google"}
-    </button>
+    <div className="w-screen h-screen flex justify-center items-center">
+      {isLoading ? (
+        <p>Loading...</p>
+      ) : (
+        <button
+          className="hover:scale-105 cursor-pointer" 
+          onClick={() => loginWithGoogle()}>
+          <img src={loginButton} alt="Login with Google" />
+        </button>
+      )}
+    </div>
+    
   );
 }
 
