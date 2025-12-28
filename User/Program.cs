@@ -148,6 +148,7 @@ app.MapPatch("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDt
     if (user == null) return Results.NotFound();
 
     bool isThereAnyUpdate = false;
+    bool isUsernameChanged = false;
     if(!string.IsNullOrWhiteSpace(updateDto.Username)){
         string normalizedUsername = updateDto.Username.ToLowerInvariant();
 
@@ -163,6 +164,7 @@ app.MapPatch("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDt
             user.Username = updateDto.Username;
             user.NormalizedUsername = normalizedUsername;
             isThereAnyUpdate = true;
+            isUsernameChanged = true;
         }
     }
 
@@ -179,8 +181,11 @@ app.MapPatch("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDt
 
         await db.SaveChangesAsync();
 
-        UserEvent userEvent = new(UserAction.Updated, userId, user.Username);
-        await publisher.PublishUserCreated(userEvent);
+        if (isUsernameChanged)
+        {
+            UserEvent userEvent = new(UserAction.Updated, userId, user.Username);
+            await publisher.PublishUserCreated(userEvent);    
+        }
     }
 
     return Results.Ok(new UserDTO(user));
