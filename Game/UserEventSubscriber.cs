@@ -57,6 +57,11 @@ public class UserEventSubscriber : IHostedService
                             {
                                 user.Username = userEvent.Username;
                                 await db.SaveChangesAsync();
+                            } 
+                            else
+                            {
+                                db.Users.Add(new AppUser { Id = userEvent.UserId, Username = userEvent.Username });
+                                await db.SaveChangesAsync();
                             }
                             break;
 
