@@ -46,7 +46,7 @@ const ProfilePage = () => {
             {/* Username */}
             {isEditingUsername ? (
               <input
-                className="text-3xl border-2 rounded-xl p-2 border-heathered-grey text-center focus:outline-none"
+                className="text-3xl border-2 rounded-xl p-2 border-heathered-grey text-center focus:outline-none w-full"
                 value={username}
                 autoFocus
                 onChange={(e) => setUsername(e.target.value)}
