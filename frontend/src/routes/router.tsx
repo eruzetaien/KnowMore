@@ -4,6 +4,7 @@ import ProfilePage from "../pages/ProfilPage";
 import RoomPage from "../pages/RoomPage";
 import GamePage from "../pages/GamePage";
 import LobbyPage from "../pages/LobbyPage";
+import FactPage from "../pages/FactPage";
 
 export const router = createBrowserRouter([
     {
@@ -17,6 +18,10 @@ export const router = createBrowserRouter([
     {
         path: "/profile",
         element: <ProfilePage />,
+    },
+    {
+        path: "/fact",
+        element: <FactPage />,
     },
     {
         path: "/lobby",
