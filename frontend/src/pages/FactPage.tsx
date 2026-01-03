@@ -3,7 +3,7 @@ import type { FactGroupResponse } from "../types/factType";
 
 import paperContent from "../assets/paper-content.svg";
 import paperTableOfContent from "../assets/paper-table-of-content.svg";
-
+import arrowBack from "../assets/icons/back-arrow.svg";
 
 const factGroupData: FactGroupResponse[] = [
   {
@@ -112,20 +112,23 @@ type PaperId = "table-of-content" | "content";
 
 function FactPage() {
 
+  const [activeGroup, setActiveGroup] = useState<FactGroupResponse | null>(null);
+
   const [order, setOrder] = useState<[PaperId, PaperId]>([
     "table-of-content",
     "content",
   ]);
   const [animating, setAnimating] = useState(false);
 
-  const handleClick = () => {
-    if (animating) return;
+  const bringToTop = (paper: PaperId) => {
+    if (animating || order[0] === paper) return;
 
     setAnimating(true);
 
-    // swap order after animation
     setTimeout(() => {
-      setOrder(([first, second]) => [second, first]);
+      setOrder((prev) =>
+        prev[0] === paper ? prev : [paper, prev[0]]
+      );
       setAnimating(false);
     }, 300);
   };
@@ -133,10 +136,7 @@ function FactPage() {
   const isTop = (card: PaperId) => order[0] === card;
 
   return (
-    <div
-      onClick={handleClick}
-      className="relative w-screen h-screen cursor-pointer select-none flex justify-center overflow-clip"
-    >
+    <div className="relative w-screen h-screen flex justify-center overflow-clip">
 
       {/* Table of Content*/}
       <div
@@ -156,7 +156,7 @@ function FactPage() {
         <div className="relative h-full flex justify-center items-center ">
           <img className="h-full" src={paperTableOfContent} alt=""/>
 
-          <div className="absolute w-full h-full flex justify-center p-20 ">
+          <div className="absolute w-full h-full flex justify-center p-20">
             <div className="w-full max-w-3xl">
               <h1 className="text-4xl mb-10 text-center">
                 Table of Contents
@@ -164,22 +164,28 @@ function FactPage() {
 
               <ul className="space-y-4 text-xl">
                 {factGroupData.map((group, index) => (
-                  <li key={group.id} className="flex gap-1">
-                    {/* Left text */}
+                  <li
+                    key={group.id}
+                    className="flex gap-1 cursor-pointer hover:font-bold"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveGroup(group);
+                      bringToTop("content");
+                    }}
+                  >
                     <span>
                       {index + 1}. {group.name}
                     </span>
 
-                    {/* Dotted leader */}
                     <span className="flex-1 overflow-hidden whitespace-nowrap text-2xl leading-none">
                       ................................................................................................
                     </span>
 
-                    {/* Optional right side (page number / arrow) */}
-                    <span className="text-gray-500 ">{'›'}</span>
+                    <span className="text-gray-500">›</span>
                   </li>
                 ))}
               </ul>
+
             </div>
 
           </div>
@@ -205,11 +211,34 @@ function FactPage() {
         <div className="relative h-full flex justify-center items-center ">
           <img className="h-full" src={paperContent} alt=""/>
 
-          <div className="absolute w-full h-full flex justify-center p-28 ">
-            <h1 className="text-4xl ">
-              Content
+          <div className="absolute w-full h-full flex flex-col px-20 py-16 overflow-auto">
+
+            <button 
+              className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity" 
+              onClick={() => { bringToTop("table-of-content");}}
+            >
+              <img className="h-[32px]" src={arrowBack} alt="" />
+            </button>
+            
+            <h1 className="w-full text-4xl text-center mb-10 mt-5">
+              {activeGroup ? activeGroup.name : "Content"}
             </h1>
+
+            {activeGroup ? (
+              <ul className="space-y-4 text-xl px-10">
+                {activeGroup.facts.map((fact) => (
+                  <li key={fact.id} className="pb-2">
+                    {fact.description}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-500">
+                Select a group from the Table of Contents
+              </p>
+            )}
           </div>
+
         </div>
         
       </div>
