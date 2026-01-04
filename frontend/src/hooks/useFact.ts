@@ -4,7 +4,7 @@ import { fetchAllFactGroup } from "../api/factApi";
 
 export const useAllUserFactQuery = () => {
   return useQuery<FactGroupResponse[]>({
-    queryKey: ["userProfile"],
+    queryKey: ["userFact"],
     queryFn: fetchAllFactGroup,
   });
 };

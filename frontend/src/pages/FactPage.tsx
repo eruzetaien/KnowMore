@@ -3,9 +3,12 @@ import type { FactGroupResponse } from "../types/factType";
 
 import paperContent from "../assets/paper-content.svg";
 import paperTableOfContent from "../assets/paper-table-of-content.svg";
-import arrowBack from "../assets/icons/back-arrow.svg";
+import arrowBackIcon from "../assets/icons/back-arrow.svg";
+import penIcon from "../assets/icons/pen.svg";
+import xIcon from "../assets/icons/x.svg";
+// import { useAllUserFactQuery } from "../hooks/useFact";
 
-const factGroupData: FactGroupResponse[] = [
+const factGroupDummyData: FactGroupResponse[] | undefined = [
   {
     id: 1,
     userId: 101,
@@ -111,7 +114,9 @@ const factGroupData: FactGroupResponse[] = [
 type PaperId = "table-of-content" | "content";
 
 function FactPage() {
-
+  // const { data: factGroupData, isLoading, isError, error } = useAllUserFactQuery();
+  const factGroupData = factGroupDummyData;
+  
   const [activeGroup, setActiveGroup] = useState<FactGroupResponse | null>(null);
 
   const [order, setOrder] = useState<[PaperId, PaperId]>([
@@ -119,6 +124,8 @@ function FactPage() {
     "content",
   ]);
   const [animating, setAnimating] = useState(false);
+
+  const [isWriting, setIsWriting] = useState(false);
 
   const bringToTop = (paper: PaperId) => {
     if (animating || order[0] === paper) return;
@@ -135,8 +142,15 @@ function FactPage() {
 
   const isTop = (card: PaperId) => order[0] === card;
 
+  // if (isLoading) return <p>Loading...</p>;
+  // if (isError) return <p>Failed to load user facts: {(error as Error).message}</p>;
+
   return (
-    <div className="relative w-screen h-screen flex justify-center overflow-clip">
+    <div className="relative w-screen h-screen flex justify-center overflow-clip"
+      style={{
+        cursor: isWriting ? `url(${"src/assets/icons/pen.svg"}) 0 57, auto` : "auto",
+      }}
+    >
 
       {/* Table of Content*/}
       <div
@@ -162,29 +176,35 @@ function FactPage() {
                 Table of Contents
               </h1>
 
-              <ul className="space-y-4 text-xl">
-                {factGroupData.map((group, index) => (
-                  <li
-                    key={group.id}
-                    className="flex gap-1 cursor-pointer hover:font-bold"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveGroup(group);
-                      bringToTop("content");
-                    }}
-                  >
-                    <span>
-                      {index + 1}. {group.name}
-                    </span>
+                {factGroupData && factGroupData.length > 0 ? (
+                  <ul className="space-y-4 text-xl">
+                    {factGroupData.map((group, index) => (
+                      <li
+                        key={group.id}
+                        className="flex gap-1 cursor-pointer hover:font-bold"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveGroup(group);
+                          bringToTop("content");
+                        }}
+                      >
+                        <span>
+                          {index + 1}. {group.name}
+                        </span>
 
-                    <span className="flex-1 overflow-hidden whitespace-nowrap text-2xl leading-none">
-                      ................................................................................................
-                    </span>
+                        <span className="flex-1 overflow-hidden whitespace-nowrap text-2xl leading-none">
+                          ................................................................................................
+                        </span>
 
-                    <span className="text-gray-500">›</span>
-                  </li>
-                ))}
-              </ul>
+                        <span className="text-gray-500">›</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-center text-xl text-gray-500">
+                    No content available.
+                  </p>
+                )}
 
             </div>
 
@@ -211,14 +231,24 @@ function FactPage() {
         <div className="relative h-full flex justify-center items-center ">
           <img className="h-full" src={paperContent} alt=""/>
 
-          <div className="absolute w-full h-full flex flex-col px-20 py-16 overflow-auto">
+          <div className="absolute w-full h-full flex flex-col pl-20 pr-28 py-16 overflow-auto">
 
-            <button 
-              className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity" 
-              onClick={() => { bringToTop("table-of-content");}}
-            >
-              <img className="h-[32px]" src={arrowBack} alt="" />
-            </button>
+            <div className="flex justify-between">
+              <button 
+                className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity" 
+                onClick={() => { bringToTop("table-of-content"); setIsWriting(false);}}
+              >
+                <img className="h-[36px]" src={arrowBackIcon} alt="" />
+              </button>
+
+              <button 
+                className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity" 
+                onClick={() => setIsWriting((prev => !prev))}
+              >
+                <img className="h-[36px]" src={isWriting? xIcon : penIcon} alt="" />
+              </button>
+            </div>
+            
             
             <h1 className="w-full text-4xl text-center mb-10 mt-5">
               {activeGroup ? activeGroup.name : "Content"}
