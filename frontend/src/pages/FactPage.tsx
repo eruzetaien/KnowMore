@@ -119,6 +119,8 @@ function FactPage() {
   
   const [activeGroup, setActiveGroup] = useState<FactGroupResponse | null>(null);
 
+  const [newFact, setNewFact] = useState('');
+
   const [order, setOrder] = useState<[PaperId, PaperId]>([
     "table-of-content",
     "content",
@@ -254,11 +256,32 @@ function FactPage() {
               {activeGroup ? activeGroup.name : "Content"}
             </h1>
 
+            {isWriting && (
+              <div className="px-8 mb-4">
+                <input
+                  type="text"
+                  value={newFact}
+                  onChange={(e) => setNewFact(e.target.value)}
+                  placeholder="Write a new fact"
+                  className="w-full text-xl focus:outline-none"
+                />
+              </div>
+            )}
+
             {activeGroup ? (
-              <ul className="space-y-4 text-xl px-10">
+              <ul className={`space-y-4 text-xl ${isWriting ? "px-8" : "px-10"}`}>
+                
                 {activeGroup.facts.map((fact) => (
                   <li key={fact.id} className="pb-2">
-                    {fact.description}
+                    {isWriting ? (
+                      <input
+                        type="text"
+                        value={fact.description}
+                        className="w-full text-xl focus:outline-none"
+                      />
+                    ) : (
+                      fact.description
+                    )}
                   </li>
                 ))}
               </ul>
