@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FactGroupResponse } from "../types/factType";
 
 import paperContent from "../assets/paper-content.svg";
@@ -6,120 +6,18 @@ import paperTableOfContent from "../assets/paper-table-of-content.svg";
 import arrowBackIcon from "../assets/icons/back-arrow.svg";
 import penIcon from "../assets/icons/pen.svg";
 import xIcon from "../assets/icons/x.svg";
-// import { useAllUserFactQuery } from "../hooks/useFact";
-
-const factGroupDummyData: FactGroupResponse[] | undefined = [
-  {
-    id: 1,
-    userId: 101,
-    name: "Science Facts",
-    facts: [
-      {
-        id: 1,
-        userId: 101,
-        factGroupId: 1,
-        description: "Water boils at 100°C.",
-        createdAt: "2023-01-15T10:30:00Z",
-        updatedAt: "2023-01-15T10:30:00Z",
-      },
-      {
-        id: 2,
-        userId: 101,
-        factGroupId: 1,
-        description: "The Earth orbits the Sun once every 365.25 days.",
-        createdAt: "2023-01-16T11:00:00Z",
-        updatedAt: "2023-01-16T11:00:00Z",
-      },
-      {
-        id: 3,
-        userId: 101,
-        factGroupId: 1,
-        description: "A human's DNA is 99.9% identical to every other human.",
-        createdAt: "2023-01-17T12:00:00Z",
-        updatedAt: "2023-01-17T12:00:00Z",
-      },
-    ],
-    createdAt: "2023-01-15T10:30:00Z",
-    updatedAt: "2023-01-17T12:00:00Z",
-  },
-  {
-    id: 2,
-    userId: 102,
-    name: "Animal Facts",
-    facts: [
-      {
-        id: 4,
-        userId: 102,
-        factGroupId: 2,
-        description: "An octopus has three hearts.",
-        createdAt: "2023-05-03T09:45:00Z",
-        updatedAt: "2023-05-03T09:45:00Z",
-      },
-      {
-        id: 5,
-        userId: 102,
-        factGroupId: 2,
-        description: "Elephants are the only animals that can't jump.",
-        createdAt: "2023-05-04T10:00:00Z",
-        updatedAt: "2023-05-04T10:00:00Z",
-      },
-      {
-        id: 6,
-        userId: 102,
-        factGroupId: 2,
-        description: "A group of flamingos is called a 'flamboyance'.",
-        createdAt: "2023-05-05T11:00:00Z",
-        updatedAt: "2023-05-05T11:00:00Z",
-      },
-    ],
-    createdAt: "2023-05-03T09:45:00Z",
-    updatedAt: "2023-05-05T11:00:00Z",
-  },
-  {
-    id: 3,
-    userId: 103,
-    name: "Tech Facts",
-    facts: [
-      {
-        id: 7,
-        userId: 103,
-        factGroupId: 3,
-        description: "The first computer virus was created in 1983.",
-        createdAt: "2023-07-07T11:00:00Z",
-        updatedAt: "2023-07-07T11:00:00Z",
-      },
-      {
-        id: 8,
-        userId: 103,
-        factGroupId: 3,
-        description: "The term 'bug' in programming was coined after a moth was found in a computer.",
-        createdAt: "2023-07-08T12:00:00Z",
-        updatedAt: "2023-07-08T12:00:00Z",
-      },
-      {
-        id: 9,
-        userId: 103,
-        factGroupId: 3,
-        description: "The first video uploaded to YouTube was titled 'Me at the zoo'.",
-        createdAt: "2023-07-09T13:00:00Z",
-        updatedAt: "2023-07-09T13:00:00Z",
-      },
-    ],
-    createdAt: "2023-07-07T11:00:00Z",
-    updatedAt: "2023-07-09T13:00:00Z",
-  },
-];
-
+import { useCreateFactGroup } from "../hooks/useFact";
+import { useAllUserFactQuery } from "../hooks/useFact";
 
 type PaperId = "table-of-content" | "content";
 
 function FactPage() {
-  // const { data: factGroupData, isLoading, isError, error } = useAllUserFactQuery();
-  const factGroupData = factGroupDummyData;
+  const { data: factGroupData, isLoading, isError, error } = useAllUserFactQuery();
   
   const [activeGroup, setActiveGroup] = useState<FactGroupResponse | null>(null);
 
   const [newFact, setNewFact] = useState('');
+  const [newFactGroup, setNewFactGroup] = useState('');
 
   const [order, setOrder] = useState<[PaperId, PaperId]>([
     "table-of-content",
@@ -127,7 +25,22 @@ function FactPage() {
   ]);
   const [animating, setAnimating] = useState(false);
 
-  const [isWriting, setIsWriting] = useState(false);
+  const [isWritingFact, setIsWritingFact] = useState(false);
+  const [isWritingFactGroup, setIsWritingFactGroup] = useState(false);
+
+  const { mutate: createFactGroup, data: createdFactGroup, isPending } = useCreateFactGroup();
+
+  useEffect(() => {
+    if (createdFactGroup && factGroupData){
+      factGroupData.concat(createdFactGroup);
+    }
+
+  }, [createFactGroup]);
+  const handleCreateFactGroup = () => {
+    if (!newFactGroup.trim()) 
+      return;
+    createFactGroup({ name : newFactGroup });
+  };
 
   const bringToTop = (paper: PaperId) => {
     if (animating || order[0] === paper) return;
@@ -144,13 +57,13 @@ function FactPage() {
 
   const isTop = (card: PaperId) => order[0] === card;
 
-  // if (isLoading) return <p>Loading...</p>;
-  // if (isError) return <p>Failed to load user facts: {(error as Error).message}</p>;
+  if (isLoading) return <p>Loading...</p>;
+  if (isError) return <p>Failed to load user facts: {(error as Error).message}</p>;
 
   return (
     <div className="relative w-screen h-screen flex justify-center overflow-clip"
       style={{
-        cursor: isWriting ? `url(${"src/assets/icons/pen.svg"}) 0 57, auto` : "auto",
+        cursor: isWritingFact ? `url(${"src/assets/icons/pen.svg"}) 0 57, auto` : "auto",
       }}
     >
 
@@ -174,39 +87,73 @@ function FactPage() {
 
           <div className="absolute w-full h-full flex justify-center p-20">
             <div className="w-full max-w-3xl">
-              <h1 className="text-4xl mb-10 text-center">
+              <h1 className="text-4xl mb-2 text-center">
                 Table of Contents
               </h1>
 
-                {factGroupData && factGroupData.length > 0 ? (
-                  <ul className="space-y-4 text-xl">
-                    {factGroupData.map((group, index) => (
-                      <li
-                        key={group.id}
-                        className="flex gap-1 cursor-pointer hover:font-bold"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveGroup(group);
-                          bringToTop("content");
-                        }}
-                      >
-                        <span>
-                          {index + 1}. {group.name}
-                        </span>
-
-                        <span className="flex-1 overflow-hidden whitespace-nowrap text-2xl leading-none">
-                          ................................................................................................
-                        </span>
-
-                        <span className="text-gray-500">›</span>
-                      </li>
-                    ))}
-                  </ul>
+              <div className="w-full flex justify-center mb-4">
+                {isWritingFactGroup ? (
+                  <div className="text-center mb-1">
+                    <input
+                      type="text"
+                      value={newFactGroup}
+                      onChange={(e) => setNewFactGroup(e.target.value)}
+                      onBlur={() => setIsWritingFactGroup(false)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleCreateFactGroup();
+                          setNewFactGroup("");
+                          setIsWritingFactGroup(false);
+                        }
+                      }}
+                      className="w-full text-xl focus:outline-none text-center"
+                      disabled={isPending}
+                      autoFocus
+                    />
+                  </div>
                 ) : (
-                  <p className="text-center text-xl text-gray-500">
-                    No content available.
-                  </p>
+                  <button
+                    className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
+                    onClick={() => setIsWritingFactGroup(true)}
+                  >
+                    <img
+                      className="h-[32px] transform rotate-[-45deg]"
+                      src={xIcon}
+                      alt="Add fact group"
+                    />
+                  </button>
                 )}
+              </div>
+
+              {factGroupData && factGroupData.length > 0 ? (
+                <ul className="space-y-4 text-xl">
+                  {factGroupData.map((group, index) => (
+                    <li
+                      key={group.id}
+                      className="flex gap-1 cursor-pointer hover:font-bold"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveGroup(group);
+                        bringToTop("content");
+                      }}
+                    >
+                      <span>
+                        {index + 1}. {group.name}
+                      </span>
+
+                      <span className="flex-1 overflow-hidden whitespace-nowrap text-2xl leading-none">
+                        ................................................................................................
+                      </span>
+
+                      <span className="text-gray-500">›</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-center text-xl text-gray-500">
+                  No content available.
+                </p>
+              )}
 
             </div>
 
@@ -238,16 +185,16 @@ function FactPage() {
             <div className="flex justify-between">
               <button 
                 className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity" 
-                onClick={() => { bringToTop("table-of-content"); setIsWriting(false);}}
+                onClick={() => { bringToTop("table-of-content"); setIsWritingFact(false);}}
               >
                 <img className="h-[36px]" src={arrowBackIcon} alt="" />
               </button>
 
               <button 
                 className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity" 
-                onClick={() => setIsWriting((prev => !prev))}
+                onClick={() => setIsWritingFact((prev => !prev))}
               >
-                <img className="h-[36px]" src={isWriting? xIcon : penIcon} alt="" />
+                <img className="h-[36px]" src={isWritingFact? xIcon : penIcon} alt="" />
               </button>
             </div>
             
@@ -256,7 +203,7 @@ function FactPage() {
               {activeGroup ? activeGroup.name : "Content"}
             </h1>
 
-            {isWriting && (
+            {isWritingFact && (
               <div className="px-8 mb-4">
                 <input
                   type="text"
@@ -269,11 +216,11 @@ function FactPage() {
             )}
 
             {activeGroup ? (
-              <ul className={`space-y-4 text-xl ${isWriting ? "px-8" : "px-10"}`}>
+              <ul className={`space-y-4 text-xl ${isWritingFact ? "px-8" : "px-10"}`}>
                 
                 {activeGroup.facts.map((fact) => (
                   <li key={fact.id} className="pb-2">
-                    {isWriting ? (
+                    {isWritingFact ? (
                       <input
                         type="text"
                         value={fact.description}

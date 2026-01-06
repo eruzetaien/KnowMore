@@ -26,3 +26,7 @@ export interface FactGroupForGame {
   name: string;
   facts: FactForGame[];
 }
+
+export interface CreateFactGroupRequest {
+  name: string;
+}
