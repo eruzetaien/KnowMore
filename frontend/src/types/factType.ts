@@ -1,15 +1,15 @@
 export interface FactResponse {
-  id: number;
-  userId: number;
-  factGroupId?: number | null;
+  id: string;
+  userId: string;
+  factGroupId?: string | null;
   description: string;
   createdAt: string; 
   updatedAt: string;
 }
 
 export interface FactGroupResponse {
-  id: number;
-  userId: number;
+  id: string;
+  userId: string;
   name: string;
   facts: FactResponse[];
   createdAt: string;
@@ -17,16 +17,21 @@ export interface FactGroupResponse {
 }
 
 export interface FactForGame {
-  id: number;
+  id: string;
   description: string;
 }
 
 export interface FactGroupForGame {
-  id: number;
+  id: string;
   name: string;
   facts: FactForGame[];
 }
 
 export interface CreateFactGroupRequest {
   name: string;
+}
+
+export interface CreateFactRequest {
+  factGroupId: string;
+  description: string;
 }

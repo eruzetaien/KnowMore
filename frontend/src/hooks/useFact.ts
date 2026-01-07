@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { CreateFactGroupRequest, FactGroupResponse} from "../types/factType";
-import { createFactGroup, fetchAllFactGroup } from "../api/factApi";
+import type { CreateFactGroupRequest, CreateFactRequest, FactGroupResponse, FactResponse} from "../types/factType";
+import { createFact, createFactGroup, fetchAllFactGroup } from "../api/factApi";
 
 export const useAllUserFactQuery = () => {
   return useQuery<FactGroupResponse[]>({
@@ -14,3 +14,10 @@ export const useCreateFactGroup = () => {
     mutationFn: createFactGroup,
   });
 };
+
+export const useCreateFact = () => {
+  return useMutation<FactResponse, Error, CreateFactRequest>({
+    mutationFn: createFact,
+  });
+};
+

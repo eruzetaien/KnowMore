@@ -11,7 +11,7 @@ public class FactInputBaseDto
 public class CreateFactDTO :  FactInputBaseDto
 {
     [Required(ErrorMessage = "FactGroupId is required.")]
-    public long FactGroupId { get; set; }   // FK to FactGroup
+    public string FactGroupId { get; set; } = string.Empty;  // FK to FactGroup
 }
 
 public class UpdateFactDTO: FactInputBaseDto {}
@@ -26,11 +26,11 @@ public class FactGroupInputBaseDto
 
 public class FactDTO
 {
-    public  long Id { get; set; }
-    public  long UserId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public  long? FactGroupId { get; set; }
+    public string? FactGroupId { get; set; }
 
     public string Description { get; set; }
 
@@ -38,21 +38,21 @@ public class FactDTO
     public DateTime UpdatedAt { get; set; }
     public FactDTO(UserFact fact, bool isOwner=true)
     {
-        Id = fact.Id;
-        UserId = fact.UserId;
+        Id = fact.Id.ToString();
+        UserId = fact.UserId.ToString();
         Description = fact.Description;
         CreatedAt = fact.CreatedAt;
         UpdatedAt = fact.UpdatedAt;
 
-        FactGroupId = isOwner ? fact.FactGroupId : null;
+        FactGroupId = isOwner ? fact.FactGroupId.ToString() : null;
     }
 }
 
 
 public class FactGroupDTO
 {
-    public long Id { get; set; }
-    public long UserId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public List<FactDTO> Facts { get; set; } = [];
     public DateTime CreatedAt { get; set; }
@@ -60,8 +60,8 @@ public class FactGroupDTO
 
     public FactGroupDTO(FactGroup factGroup)
     {
-        Id = factGroup.Id;
-        UserId = factGroup.UserId;
+        Id = factGroup.Id.ToString();
+        UserId = factGroup.UserId.ToString();
         Name = factGroup.Name;
         Facts = factGroup.Facts.Select(f => new FactDTO(f)).ToList();
         CreatedAt = factGroup.CreatedAt;
@@ -72,8 +72,8 @@ public class FactGroupDTO
 
 public class ShareFactInfoDTO
 {
-    public  long FactId { get; set; }
-    public  long TargetUserId { get; set; }
+    public string FactId { get; set; } = string.Empty;
+    public string TargetUserId { get; set; } = string.Empty;
     public bool IsShared { get; set; }
     public string? Description { get; set; }
 }

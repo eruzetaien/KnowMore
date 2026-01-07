@@ -6,14 +6,15 @@ import paperTableOfContent from "../assets/paper-table-of-content.svg";
 import arrowBackIcon from "../assets/icons/back-arrow.svg";
 import penIcon from "../assets/icons/pen.svg";
 import xIcon from "../assets/icons/x.svg";
-import { useCreateFactGroup } from "../hooks/useFact";
+import { useCreateFact, useCreateFactGroup } from "../hooks/useFact";
 import { useAllUserFactQuery } from "../hooks/useFact";
 
 type PaperId = "table-of-content" | "content";
 
 function FactPage() {
-  const { data: factGroupData, isLoading, isError, error } = useAllUserFactQuery();
+  const { data: queryFactGroups, isLoading, isError, error } = useAllUserFactQuery();
   
+  const [factGroupData, setFactGroupData] = useState<FactGroupResponse[]>([]);
   const [activeGroup, setActiveGroup] = useState<FactGroupResponse | null>(null);
 
   const [newFact, setNewFact] = useState('');
@@ -28,7 +29,23 @@ function FactPage() {
   const [isWritingFact, setIsWritingFact] = useState(false);
   const [isWritingFactGroup, setIsWritingFactGroup] = useState(false);
 
-  const { mutate: createFactGroup, data: createdFactGroup, isPending } = useCreateFactGroup();
+  const {
+    mutate: createFactGroup,
+    isPending: isCreatingFactGroup,
+    data: createdFactGroup,
+  } = useCreateFactGroup();
+
+  const {
+    mutate: createFact,
+    isPending: isCreatingFact,
+    data: createdFact,
+  } = useCreateFact();
+
+  useEffect(() => {
+    if (queryFactGroups) {
+      setFactGroupData(queryFactGroups);
+    }
+  }, [queryFactGroups]);
 
   useEffect(() => {
     if (createdFactGroup && factGroupData){
@@ -36,10 +53,41 @@ function FactPage() {
     }
 
   }, [createFactGroup]);
+
+  useEffect(() => {
+    if (createdFact && createdFact.factGroupId && factGroupData) {
+      setFactGroupData(prevGroups =>
+        prevGroups.map(group =>
+          group.id === createdFact.factGroupId
+            ? {
+                ...group,
+                facts: [...group.facts, createdFact],
+              }
+            : group
+        )
+      );
+    }
+  }, [createdFact]);
+
+  useEffect(() => {
+    if (activeGroup && factGroupData) {
+      const updatedGroup = factGroupData.find(g => g.id === activeGroup.id) || null;
+      setActiveGroup(updatedGroup);
+    }
+  }, [factGroupData]);
+
   const handleCreateFactGroup = () => {
     if (!newFactGroup.trim()) 
       return;
     createFactGroup({ name : newFactGroup });
+  };
+
+  const handleCreateFact = () => {
+    if (!newFact.trim() || !activeGroup) 
+      return;
+
+    console.log(activeGroup);
+    createFact({ factGroupId : activeGroup.id, description: newFact });
   };
 
   const bringToTop = (paper: PaperId) => {
@@ -87,11 +135,11 @@ function FactPage() {
 
           <div className="absolute w-full h-full flex justify-center p-20">
             <div className="w-full max-w-3xl">
-              <h1 className="text-4xl mb-2 text-center">
+              <h1 className="text-4xl text-center">
                 Table of Contents
               </h1>
 
-              <div className="w-full flex justify-center mb-4">
+              <div className="w-full flex justify-center">
                 {isWritingFactGroup ? (
                   <div className="text-center mb-1">
                     <input
@@ -107,7 +155,7 @@ function FactPage() {
                         }
                       }}
                       className="w-full text-xl focus:outline-none text-center"
-                      disabled={isPending}
+                      disabled={isCreatingFactGroup}
                       autoFocus
                     />
                   </div>
@@ -209,8 +257,17 @@ function FactPage() {
                   type="text"
                   value={newFact}
                   onChange={(e) => setNewFact(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") { 
+                      handleCreateFact();
+                      setIsWritingFact(false);
+                      setNewFact("");
+                    }
+                  }}
                   placeholder="Write a new fact"
                   className="w-full text-xl focus:outline-none"
+                  disabled={isCreatingFact}
+                  autoFocus
                 />
               </div>
             )}

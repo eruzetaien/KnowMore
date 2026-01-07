@@ -11,8 +11,9 @@ public static class FactHandler
             if (!userClaim.TryGetUserId(out long userId))
                 return Results.Unauthorized();
 
+            var factGroupId = long.Parse(createDto.FactGroupId);
             FactGroup? factGroup = await db.FactGroups
-                .Where(g => g.Id == createDto.FactGroupId && g.UserId == userId)
+                .Where(g => g.Id == factGroupId && g.UserId == userId)
                 .FirstOrDefaultAsync();
 
             if (factGroup == null)
