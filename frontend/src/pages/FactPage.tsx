@@ -48,11 +48,10 @@ function FactPage() {
   }, [queryFactGroups]);
 
   useEffect(() => {
-    if (createdFactGroup && factGroupData){
-      factGroupData.concat(createdFactGroup);
+    if (createdFactGroup) {
+      setFactGroupData(prev => [...prev, createdFactGroup]);
     }
-
-  }, [createFactGroup]);
+  }, [createdFactGroup]);
 
   useEffect(() => {
     if (createdFact && createdFact.factGroupId && factGroupData) {
@@ -161,11 +160,11 @@ function FactPage() {
                   </div>
                 ) : (
                   <button
-                    className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
+                    className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity mb-2"
                     onClick={() => setIsWritingFactGroup(true)}
                   >
                     <img
-                      className="h-[32px] transform rotate-[-45deg]"
+                      className="h-[24px] transform rotate-[-45deg]"
                       src={xIcon}
                       alt="Add fact group"
                     />
