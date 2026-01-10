@@ -49,7 +49,7 @@ function FactPage() {
 
   useEffect(() => {
     if (createdFactGroup) {
-      setFactGroupData(prev => [...prev, createdFactGroup]);
+      setFactGroupData(prev => [createdFactGroup, ...prev]);
     }
   }, [createdFactGroup]);
 
@@ -60,7 +60,7 @@ function FactPage() {
           group.id === createdFact.factGroupId
             ? {
                 ...group,
-                facts: [...group.facts, createdFact],
+                facts: [createdFact, ...group.facts, ],
               }
             : group
         )

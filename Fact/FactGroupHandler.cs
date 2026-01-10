@@ -14,6 +14,7 @@ public static class FactGroupHandler
             var factGroups = await db.FactGroups
                 .Include(g => g.Facts)
                 .Where(g => g.UserId == userId)
+                .OrderByDescending(g => g.UpdatedAt)
                 .ToListAsync();
 
             var factGroupDtoList = factGroups.Select(g => new FactGroupDTO(g)).ToList();

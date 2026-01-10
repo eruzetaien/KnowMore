@@ -63,7 +63,10 @@ public class FactGroupDTO
         Id = factGroup.Id.ToString();
         UserId = factGroup.UserId.ToString();
         Name = factGroup.Name;
-        Facts = factGroup.Facts.Select(f => new FactDTO(f)).ToList();
+        Facts = factGroup.Facts
+            .OrderByDescending(f => f.UpdatedAt)
+            .Select(f => new FactDTO(f))
+            .ToList();
         CreatedAt = factGroup.CreatedAt;
         UpdatedAt = factGroup.UpdatedAt;
     }
