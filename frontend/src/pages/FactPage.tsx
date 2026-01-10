@@ -6,7 +6,7 @@ import paperTableOfContent from "../assets/paper-table-of-content.svg";
 import arrowBackIcon from "../assets/icons/back-arrow.svg";
 import penIcon from "../assets/icons/pen.svg";
 import xIcon from "../assets/icons/x.svg";
-import { useCreateFact, useCreateFactGroup } from "../hooks/useFact";
+import { useCreateFact, useCreateFactGroup, useUpdateFact } from "../hooks/useFact";
 import { useAllUserFactQuery } from "../hooks/useFact";
 
 type PaperId = "table-of-content" | "content";
@@ -28,6 +28,8 @@ function FactPage() {
 
   const [isWritingFact, setIsWritingFact] = useState(false);
   const [isWritingFactGroup, setIsWritingFactGroup] = useState(false);
+  const [editingFactId, setEditingFactId] = useState<string | null>(null);
+  const [editingFactValue, setEditingFactValue] = useState("");
 
   const {
     mutate: createFactGroup,
@@ -40,6 +42,12 @@ function FactPage() {
     isPending: isCreatingFact,
     data: createdFact,
   } = useCreateFact();
+
+  const {
+    mutate: updateFact,
+    isPending: isUpdatingFact,
+    data: updatedFact,
+  } = useUpdateFact();
 
   useEffect(() => {
     if (queryFactGroups) {
@@ -69,6 +77,23 @@ function FactPage() {
   }, [createdFact]);
 
   useEffect(() => {
+    if (updatedFact && updatedFact.factGroupId && factGroupData) {
+      setFactGroupData(prevGroups =>
+        prevGroups.map(group =>
+          group.id === updatedFact.factGroupId
+            ? {
+                ...group,
+                facts: group.facts.map(f =>
+                  f.id === updatedFact.id ? updatedFact : f
+                ),
+              }
+            : group
+        )
+      );
+    }
+  }, [updatedFact]);
+
+  useEffect(() => {
     if (activeGroup && factGroupData) {
       const updatedGroup = factGroupData.find(g => g.id === activeGroup.id) || null;
       setActiveGroup(updatedGroup);
@@ -87,6 +112,16 @@ function FactPage() {
 
     console.log(activeGroup);
     createFact({ factGroupId : activeGroup.id, description: newFact });
+  };
+
+  const handleUpdateFact = (factId: string) => {
+  if (!editingFactValue.trim()) return;
+
+  updateFact(
+      { factId: factId, description: editingFactValue }
+    );
+
+    setEditingFactId(null);
   };
 
   const bringToTop = (paper: PaperId) => {
@@ -276,14 +311,33 @@ function FactPage() {
                 
                 {activeGroup.facts.map((fact) => (
                   <li key={fact.id} className="pb-2">
-                    {isWritingFact ? (
+                    {isWritingFact && editingFactId === fact.id ? (
                       <input
                         type="text"
-                        value={fact.description}
-                        className="w-full text-xl focus:outline-none"
+                        value={editingFactValue}
+                        onChange={(e) => setEditingFactValue(e.target.value)}
+                        onBlur={() => setEditingFactId(null)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleUpdateFact(fact.id);
+                            setEditingFactId(null);
+                          }
+                          if (e.key === "Escape") setEditingFactId(null);
+                        }}
+                        className="w-full text-xl focus:outline-none" 
+                        disabled={isUpdatingFact}
+                        autoFocus
                       />
                     ) : (
-                      fact.description
+                      <span
+                        className="hover:font-bold"
+                        onClick={() => {
+                          setEditingFactId(fact.id);
+                          setEditingFactValue(fact.description);
+                        }}
+                      >
+                        {fact.description}
+                      </span>
                     )}
                   </li>
                 ))}
