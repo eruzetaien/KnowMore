@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { CreateFactGroupRequest, CreateFactRequest, FactGroupResponse, FactResponse, UpdateFactRequest} from "../types/factType";
-import { createFact, createFactGroup, fetchAllFactGroup, updateFact } from "../api/factApi";
+import type { CreateFactGroupRequest, CreateFactRequest, FactGroupResponse, FactResponse, UpdateFactGroupRequest, UpdateFactRequest} from "../types/factType";
+import { createFact, createFactGroup, fetchAllFactGroup, updateFact, updateFactGroup } from "../api/factApi";
 import toast from "react-hot-toast";
 
 export const useAllUserFactQuery = () => {
@@ -54,12 +54,34 @@ export const useCreateFact = () => {
   });
 };
 
+export const useUpdateFactGroup = () => {
+  return useMutation<FactGroupResponse, Error, UpdateFactGroupRequest>({
+    mutationFn: updateFactGroup,
+
+    onMutate: () => {
+      toast.loading("Updating fact group...", { id: "update-fact-group" });
+    },
+
+    onSuccess: () => {
+      toast.success("Fact group updated successfully!", {
+        id: "update-fact-group",
+      });
+    },
+
+    onError: (error) => {
+      toast.error(error.message || "Failed to update fact group", {
+        id: "update-fact-group",
+      });
+    },
+  });
+};
+
 export const useUpdateFact = () => {
   return useMutation<FactResponse, Error, UpdateFactRequest>({
     mutationFn: updateFact,
 
     onMutate: () => {
-      toast.loading("Creating fact...", { id: "update-fact" });
+      toast.loading("Updating fact...", { id: "update-fact" });
     },
 
     onSuccess: () => {

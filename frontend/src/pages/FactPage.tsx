@@ -6,7 +6,7 @@ import paperTableOfContent from "../assets/paper-table-of-content.svg";
 import arrowBackIcon from "../assets/icons/back-arrow.svg";
 import penIcon from "../assets/icons/pen.svg";
 import xIcon from "../assets/icons/x.svg";
-import { useCreateFact, useCreateFactGroup, useUpdateFact } from "../hooks/useFact";
+import { useCreateFact, useCreateFactGroup, useUpdateFact, useUpdateFactGroup } from "../hooks/useFact";
 import { useAllUserFactQuery } from "../hooks/useFact";
 
 type PaperId = "table-of-content" | "content";
@@ -28,6 +28,7 @@ function FactPage() {
 
   const [isWritingFact, setIsWritingFact] = useState(false);
   const [isWritingFactGroup, setIsWritingFactGroup] = useState(false);
+  const [isEditingFactGroup, setIsEditingFactGroup] = useState(false);
   const [editingFactId, setEditingFactId] = useState<string | null>(null);
   const [editingFactValue, setEditingFactValue] = useState("");
 
@@ -42,6 +43,12 @@ function FactPage() {
     isPending: isCreatingFact,
     data: createdFact,
   } = useCreateFact();
+
+  const {
+    mutate: updateFactGroup,
+    isPending: isUpdatingFactGroup,
+    data: updatedFactGroup,
+  } = useUpdateFactGroup();
 
   const {
     mutate: updateFact,
@@ -75,6 +82,18 @@ function FactPage() {
       );
     }
   }, [createdFact]);
+
+  useEffect(() => {
+    if (updatedFactGroup && activeGroup && factGroupData) {
+      setFactGroupData(prevGroups => {
+        const filtered = prevGroups.filter(
+          group => group.id !== updatedFactGroup.id
+        );
+
+        return [updatedFactGroup, ...filtered];
+      });
+    }
+  }, [updatedFactGroup]);
 
   useEffect(() => {
     if (updatedFact && updatedFact.factGroupId && factGroupData) {
@@ -114,12 +133,22 @@ function FactPage() {
     createFact({ factGroupId : activeGroup.id, description: newFact });
   };
 
-  const handleUpdateFact = (factId: string) => {
-  if (!editingFactValue.trim()) return;
+  const handleUpdateFactGroup = () => {
+    if (activeGroup == null || !newFactGroup.trim()) return;
 
-  updateFact(
-      { factId: factId, description: editingFactValue }
-    );
+    updateFactGroup(
+        { factGroupId: activeGroup.id, name: newFactGroup }
+      );
+
+    setIsEditingFactGroup(false);
+  };
+
+  const handleUpdateFact = (factId: string) => {
+    if (!editingFactValue.trim()) return;
+
+    updateFact(
+        { factId: factId, description: editingFactValue }
+      );
 
     setEditingFactId(null);
   };
@@ -280,10 +309,38 @@ function FactPage() {
               </button>
             </div>
             
+
+            {isEditingFactGroup ? (
+              <input
+                type="text"
+                value={newFactGroup}
+                onChange={(e) => setNewFactGroup(e.target.value)}
+                onBlur={() => setIsEditingFactGroup(false)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleUpdateFactGroup();
+                  }
+                  if (e.key === "Escape") setIsEditingFactGroup(false);
+                }}
+                className="w-full text-4xl text-center mb-10 mt-5 focus:outline-none" 
+                disabled={isUpdatingFactGroup}
+                autoFocus
+              />
+            ) : (
+              <h1 
+                className= {`w-full text-4xl text-center mb-10 mt-5 ${isWritingFact ? "hover:scale-105" : ""}`}
+                onClick={() => {
+                  if (isWritingFact == false)
+                    return;
+                  setIsEditingFactGroup(true);
+                  setNewFactGroup(activeGroup ? activeGroup.name : "Content");
+                }}
+              >
+                {activeGroup ? activeGroup.name : "Content"}
+              </h1>
+            )}
             
-            <h1 className="w-full text-4xl text-center mb-10 mt-5">
-              {activeGroup ? activeGroup.name : "Content"}
-            </h1>
+            
 
             {isWritingFact && (
               <div className="px-8 mb-4">
@@ -330,9 +387,9 @@ function FactPage() {
                       />
                     ) : (
                       <span
-                        className="hover:font-bold"
+                        className={`${isWritingFact ? "hover:font-bold" : ""} `}
                         onClick={() => {
-                          setEditingFactId(fact.id);
+                          setEditingFactId(fact.id);  
                           setEditingFactValue(fact.description);
                         }}
                       >

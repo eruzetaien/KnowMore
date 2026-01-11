@@ -36,6 +36,11 @@ export interface CreateFactRequest {
   description: string;
 }
 
+export interface UpdateFactGroupRequest {
+  factGroupId: string;
+  name: string;
+}
+
 export interface UpdateFactRequest {
   factId: string;
   description: string;

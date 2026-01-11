@@ -1,4 +1,4 @@
-import type { CreateFactGroupRequest, CreateFactRequest, FactGroupResponse, FactResponse, UpdateFactRequest } from "../types/factType";
+import type { CreateFactGroupRequest, CreateFactRequest, FactGroupResponse, FactResponse, UpdateFactGroupRequest, UpdateFactRequest } from "../types/factType";
 import { apiRequest } from "./apiRequest";
 
 export const fetchAllFactGroup = async (): Promise<FactGroupResponse[]> => {
@@ -21,6 +21,14 @@ export const createFact = async (
   const endpoint = `${import.meta.env.VITE_FACT_BASE_URL}/facts`;
 
   return apiRequest<FactResponse>(endpoint, "POST", requestBody);
+};
+
+export const updateFactGroup = async (
+  requestBody: UpdateFactGroupRequest
+): Promise<FactGroupResponse> => {
+  const endpoint = `${import.meta.env.VITE_FACT_BASE_URL}/groups/${requestBody.factGroupId}`;
+
+  return apiRequest<FactGroupResponse>(endpoint, "PUT", {name:requestBody.name});
 };
 
 export const updateFact = async (
