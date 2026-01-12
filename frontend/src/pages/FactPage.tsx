@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import type { FactGroupResponse } from "../types/factType";
+import { useMemo, useState } from "react";
 
 import paperContent from "../assets/paper-content.svg";
 import paperTableOfContent from "../assets/paper-table-of-content.svg";
@@ -12,10 +11,12 @@ import { useAllUserFactQuery } from "../hooks/useFact";
 type PaperId = "table-of-content" | "content";
 
 function FactPage() {
-  const { data: queryFactGroups, isLoading, isError, error } = useAllUserFactQuery();
-  
-  const [factGroupData, setFactGroupData] = useState<FactGroupResponse[]>([]);
-  const [activeGroup, setActiveGroup] = useState<FactGroupResponse | null>(null);
+  const { data: factGroups = [], isLoading, isError, error  } = useAllUserFactQuery();
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const activeGroup = useMemo(
+    () => factGroups.find(g => g.id === activeGroupId) ?? null,
+    [factGroups, activeGroupId]
+  );
 
   const [newFact, setNewFact] = useState('');
   const [newFactGroup, setNewFactGroup] = useState('');
@@ -35,89 +36,22 @@ function FactPage() {
   const {
     mutate: createFactGroup,
     isPending: isCreatingFactGroup,
-    data: createdFactGroup,
   } = useCreateFactGroup();
 
   const {
     mutate: createFact,
     isPending: isCreatingFact,
-    data: createdFact,
   } = useCreateFact();
 
   const {
     mutate: updateFactGroup,
     isPending: isUpdatingFactGroup,
-    data: updatedFactGroup,
   } = useUpdateFactGroup();
 
   const {
     mutate: updateFact,
     isPending: isUpdatingFact,
-    data: updatedFact,
   } = useUpdateFact();
-
-  useEffect(() => {
-    if (queryFactGroups) {
-      setFactGroupData(queryFactGroups);
-    }
-  }, [queryFactGroups]);
-
-  useEffect(() => {
-    if (createdFactGroup) {
-      setFactGroupData(prev => [createdFactGroup, ...prev]);
-    }
-  }, [createdFactGroup]);
-
-  useEffect(() => {
-    if (createdFact && createdFact.factGroupId && factGroupData) {
-      setFactGroupData(prevGroups =>
-        prevGroups.map(group =>
-          group.id === createdFact.factGroupId
-            ? {
-                ...group,
-                facts: [createdFact, ...group.facts, ],
-              }
-            : group
-        )
-      );
-    }
-  }, [createdFact]);
-
-  useEffect(() => {
-    if (updatedFactGroup && activeGroup && factGroupData) {
-      setFactGroupData(prevGroups => {
-        const filtered = prevGroups.filter(
-          group => group.id !== updatedFactGroup.id
-        );
-
-        return [updatedFactGroup, ...filtered];
-      });
-    }
-  }, [updatedFactGroup]);
-
-  useEffect(() => {
-    if (updatedFact && updatedFact.factGroupId && factGroupData) {
-      setFactGroupData(prevGroups =>
-        prevGroups.map(group =>
-          group.id === updatedFact.factGroupId
-            ? {
-                ...group,
-                facts: group.facts.map(f =>
-                  f.id === updatedFact.id ? updatedFact : f
-                ),
-              }
-            : group
-        )
-      );
-    }
-  }, [updatedFact]);
-
-  useEffect(() => {
-    if (activeGroup && factGroupData) {
-      const updatedGroup = factGroupData.find(g => g.id === activeGroup.id) || null;
-      setActiveGroup(updatedGroup);
-    }
-  }, [factGroupData]);
 
   const handleCreateFactGroup = () => {
     if (!newFactGroup.trim()) 
@@ -236,15 +170,15 @@ function FactPage() {
                 )}
               </div>
 
-              {factGroupData && factGroupData.length > 0 ? (
+              {factGroups && factGroups.length > 0 ? (
                 <ul className="space-y-4 text-xl">
-                  {factGroupData.map((group, index) => (
+                  {factGroups.map((group, index) => (
                     <li
                       key={group.id}
                       className="flex gap-1 cursor-pointer hover:font-bold"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setActiveGroup(group);
+                        setActiveGroupId(group.id);
                         bringToTop("content");
                       }}
                     >

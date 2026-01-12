@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CreateFactGroupRequest, CreateFactRequest, FactGroupResponse, FactResponse, UpdateFactGroupRequest, UpdateFactRequest} from "../types/factType";
 import { createFact, createFactGroup, fetchAllFactGroup, updateFact, updateFactGroup } from "../api/factApi";
 import toast from "react-hot-toast";
@@ -11,6 +11,8 @@ export const useAllUserFactQuery = () => {
 };
 
 export const useCreateFactGroup = () => {
+  const queryClient = useQueryClient();
+
   return useMutation<FactGroupResponse, Error, CreateFactGroupRequest>({
     mutationFn: createFactGroup,
 
@@ -18,7 +20,12 @@ export const useCreateFactGroup = () => {
       toast.loading("Creating fact group...", { id: "create-fact-group" });
     },
 
-    onSuccess: () => {
+    onSuccess: (newGroup) => {
+      queryClient.setQueryData<FactGroupResponse[]>(
+        ["userFact"],
+        (old = []) => [newGroup, ...old]
+      );
+
       toast.success("Fact group created successfully!", {
         id: "create-fact-group",
       });
@@ -33,6 +40,7 @@ export const useCreateFactGroup = () => {
 };
 
 export const useCreateFact = () => {
+  const queryClient = useQueryClient();
   return useMutation<FactResponse, Error, CreateFactRequest>({
     mutationFn: createFact,
 
@@ -40,7 +48,17 @@ export const useCreateFact = () => {
       toast.loading("Creating fact...", { id: "create-fact" });
     },
 
-    onSuccess: () => {
+    onSuccess: (newFact) => {
+      queryClient.setQueryData<FactGroupResponse[]>(
+        ["userFact"],
+        (old = []) =>
+          old.map(group =>
+            group.id === newFact.factGroupId
+              ? { ...group, facts: [newFact, ...group.facts] }
+              : group
+          )
+      );
+
       toast.success("Fact created successfully!", {
         id: "create-fact",
       });
@@ -55,6 +73,7 @@ export const useCreateFact = () => {
 };
 
 export const useUpdateFactGroup = () => {
+  const queryClient = useQueryClient();
   return useMutation<FactGroupResponse, Error, UpdateFactGroupRequest>({
     mutationFn: updateFactGroup,
 
@@ -62,7 +81,13 @@ export const useUpdateFactGroup = () => {
       toast.loading("Updating fact group...", { id: "update-fact-group" });
     },
 
-    onSuccess: () => {
+    onSuccess: (updatedGroup) => {
+      queryClient.setQueryData<FactGroupResponse[]>(
+        ["userFact"],
+        (old = []) =>
+          [updatedGroup, ...old.filter(g => g.id !== updatedGroup.id)]
+      );
+
       toast.success("Fact group updated successfully!", {
         id: "update-fact-group",
       });
@@ -77,6 +102,7 @@ export const useUpdateFactGroup = () => {
 };
 
 export const useUpdateFact = () => {
+  const queryClient = useQueryClient();
   return useMutation<FactResponse, Error, UpdateFactRequest>({
     mutationFn: updateFact,
 
@@ -84,7 +110,22 @@ export const useUpdateFact = () => {
       toast.loading("Updating fact...", { id: "update-fact" });
     },
 
-    onSuccess: () => {
+    onSuccess: (updatedFact) => {
+      queryClient.setQueryData<FactGroupResponse[]>(
+        ["userFact"],
+        (old = []) =>
+          old.map(group =>
+            group.id === updatedFact.factGroupId
+              ? {
+                  ...group,
+                  facts: group.facts.map(f =>
+                    f.id === updatedFact.id ? updatedFact : f
+                  ),
+                }
+              : group
+          )
+      );
+
       toast.success("Fact updated successfully!", {
         id: "update-fact",
       });
