@@ -11,7 +11,9 @@ import { useAllUserFactQuery } from "../hooks/useFact";
 type PaperId = "table-of-content" | "content";
 
 function FactPage() {
-  const { data: factGroups = [], isLoading, isError, error  } = useAllUserFactQuery();
+  const { data: apiResponse, isLoading, isError, error  } = useAllUserFactQuery();
+  const factGroups = apiResponse?.data ?? []; 
+
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const activeGroup = useMemo(
     () => factGroups.find(g => g.id === activeGroupId) ?? null,

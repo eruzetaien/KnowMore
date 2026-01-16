@@ -1,3 +1,4 @@
+import type { ApiResponse } from "../types/apiType";
 import { redirectIfNotOn } from "../utils/redirect";
 
 export const apiRequest = async <T>(
@@ -5,7 +6,7 @@ export const apiRequest = async <T>(
   method: string,
   body: object = {},
   headers: Record<string, string> = {}
-): Promise<T> => {
+): Promise<ApiResponse<T>> => {
   const fetchOptions: RequestInit = {
     method,
     headers: {

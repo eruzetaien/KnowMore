@@ -7,14 +7,25 @@ public class ValidationFilter<T> : IEndpointFilter where T : class
         var dto = context.Arguments.OfType<T>().FirstOrDefault();
         if (dto is null)
         {
-            return Results.BadRequest("Invalid request body.");
+            return Results.BadRequest(new Response
+            {
+                Status = RequestStatus.SystemValidationError,
+                Message = "Invalid request body"
+            });
         }
 
         var validationContext = new ValidationContext(dto);
         var results = new List<ValidationResult>();
         if (!Validator.TryValidateObject(dto, validationContext, results, true))
         {
-            return Results.BadRequest(results.Select(r => r.ErrorMessage));
+            var errorMessages = string.Join("; ", results.Select(r => r.ErrorMessage));
+            var response = new Response
+            {
+                Status = RequestStatus.BusinessValidationError,
+                Message = errorMessages
+            };
+
+            return Results.BadRequest(response);
         }
 
         return await next(context); 
