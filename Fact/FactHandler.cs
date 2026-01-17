@@ -17,7 +17,7 @@ public static class FactHandler
                 .FirstOrDefaultAsync();
 
             if (factGroup == null)
-                return Results.BadRequest(new[] { "FactGroup does not exist." });
+                return FactNotFound();
 
             long factId = snowflake.NextID();
 
@@ -35,7 +35,13 @@ public static class FactHandler
             db.Facts.Add(fact);
             await db.SaveChangesAsync();
 
-            return Results.Created($"/facts/{fact.Id}", new FactDTO(fact, isOwner: true));
+            Response<FactDTO> response = new()
+            {
+                Status = RequestStatus.Success,
+                Message = SuccessMessages.FactCreated,
+                Data = new FactDTO(fact, isOwner: true)
+            };
+            return Results.Created($"/facts/{fact.Id}", response);
         })
         .RequireAuthorization()
         .AddEndpointFilter<ValidationFilter<CreateFactDTO>>();
@@ -47,13 +53,19 @@ public static class FactHandler
 
             UserFact? fact = await db.Facts.FirstOrDefaultAsync(u => u.Id == id && u.UserId == userId);
             if (fact == null)
-                return Results.BadRequest(new[] { "Fact does not exist." });
+                return FactNotFound();
 
             fact.Description = updateDto.Description;
             fact.UpdatedAt = DateTime.UtcNow;
             await db.SaveChangesAsync();
 
-            return Results.Ok(new FactDTO(fact, isOwner: true));
+            Response<FactDTO> response = new()
+            {
+                Status = RequestStatus.Success,
+                Message = SuccessMessages.FactUpdated,
+                Data = new FactDTO(fact, isOwner: true)
+            };
+            return Results.Ok(response);
         })
         .RequireAuthorization()
         .AddEndpointFilter<ValidationFilter<UpdateFactDTO>>();
@@ -65,12 +77,17 @@ public static class FactHandler
 
             UserFact? fact = await db.Facts.FirstOrDefaultAsync(u => u.Id == id && u.UserId == userId);
             if (fact == null)
-                return Results.NotFound("Fact does not exist.");
+                return FactNotFound();
 
             db.Facts.Remove(fact);
             await db.SaveChangesAsync();
 
-            return Results.NoContent();
+            Response response = new()
+            {
+                Status = RequestStatus.Success,
+                Message = SuccessMessages.FactDeleted,
+            };
+            return Results.Ok(response);
         })
         .RequireAuthorization();
 
@@ -81,12 +98,26 @@ public static class FactHandler
 
             UserFact? fact = await db.Facts.FirstOrDefaultAsync(u => u.Id == id && u.UserId == userId);
             if (fact == null)
-                return Results.NotFound("Fact does not exist.");
+                return FactNotFound();
 
-            return Results.Ok(new FactDTO(fact, isOwner: true));
+            Response<FactDTO> response = new()
+            {
+                Status = RequestStatus.Success,
+                Data = new FactDTO(fact, isOwner: true)
+            };
+            return Results.Ok(response);
         })
         .RequireAuthorization();
 
         return app;
+    }
+
+    private static IResult FactNotFound()
+    {
+        return Results.NotFound(new Response<FactDTO>
+        {
+            Status = RequestStatus.SystemValidationError,
+            Message = ErrorMessages.FactNotFound 
+        });
     }
 }
