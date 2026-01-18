@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { useProfileQuery, useUpdateProfile } from "../hooks/useUserProfile";
 
 const ProfilePage = () => {
-  const { data: user, isLoading, isError, error } = useProfileQuery();
-  const { mutate: updateProfile, data: updatedUser, isPending } =
-    useUpdateProfile();
+  const { data: fetchResponse, isLoading, isError, error } = useProfileQuery();
+  const user = fetchResponse?.data;
+  const { mutate: updateProfile, data: updateResponse, isPending } = useUpdateProfile();
+  const updatedUser = updateResponse?.data;
 
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);

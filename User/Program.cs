@@ -132,10 +132,15 @@ app.MapGet("/me", async (ClaimsPrincipal userClaim, UserDb db) =>
         return Results.Unauthorized();
 
     AppUser? user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
-    if (user is null)
-        return Results.NotFound();
+    if (user == null)
+        return UserNotFound();
 
-    return Results.Ok(new UserDTO(user));
+    Response<UserDTO> response = new()
+    {
+        Status = RequestStatus.Success,
+        Data = new UserDTO(user),
+    };
+    return Results.Ok(response);
 })
 .RequireAuthorization();
 
@@ -145,7 +150,10 @@ app.MapPatch("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDt
         return Results.Unauthorized();
 
     var user = await db.Users.FindAsync(userId);
-    if (user == null) return Results.NotFound();
+    if (user == null)
+        return UserNotFound();
+
+    Response<UserDTO> response = new();
 
     bool isThereAnyUpdate = false;
     bool isUsernameChanged = false;
@@ -156,7 +164,9 @@ app.MapPatch("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDt
             u.NormalizedUsername == normalizedUsername &&
             u.Id != userId))
         {
-            return TypedResults.BadRequest($"Username '{updateDto.Username}' already exists.");
+            response.Status = RequestStatus.BusinessValidationError;
+            response.Message = string.Format(ErrorMessageTemplates.UserAlreadyExists, updateDto.Username);
+            return Results.BadRequest(response);
         }
 
         if ( updateDto.Username != user.Username)
@@ -188,9 +198,22 @@ app.MapPatch("/update", async (ClaimsPrincipal userClaim, UpdateUserDTO updateDt
         }
     }
 
-    return Results.Ok(new UserDTO(user));
+    response.Status = RequestStatus.Success;
+    response.Message = SuccessMessages.ProfileUpdated;
+    response.Data = new UserDTO(user);
+    return Results.Ok(response);
 })
 .RequireAuthorization()
 .AddEndpointFilter<ValidationFilter<UpdateUserDTO>>();
 
 app.Run();
+
+
+IResult UserNotFound()
+{
+    return Results.NotFound(new Response<UserDTO>
+    {
+        Status = RequestStatus.SystemValidationError,
+        Message = ErrorMessages.UserNotFound
+    });
+}
