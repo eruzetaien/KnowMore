@@ -232,7 +232,11 @@ function FactPage() {
             <div className="flex justify-between">
               <button 
                 className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity" 
-                onClick={() => { bringToTop("table-of-content"); setIsWritingFact(false);}}
+                onClick={() => { 
+                  bringToTop("table-of-content"); 
+                  setIsWritingFact(false);
+                  setNewFactGroup("");
+                }}
               >
                 <img className="h-[36px]" src={arrowBackIcon} alt="" />
               </button>
