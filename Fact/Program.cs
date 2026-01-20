@@ -10,8 +10,7 @@ builder.Services
     .AddDatabase<FactDb>()
     .AddSnowflake(machineId:1)
     .AddJwtAuth()
-    .AddCustomCors()
-    .AddSwagger(documentName:"KnowMoreFactAPI", title:"KnowMoreFactAPI", version:"v1");
+    .AddCustomCors();
 
 builder.Services.AddHostedService<UserEventSubscriber>();
 

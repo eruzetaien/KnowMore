@@ -21,8 +21,7 @@ builder.Services
     .AddSnowflake(machineId: 1)
     .AddJwtAuth(jwtKeyBytes)
     .AddGoogleAuth()
-    .AddCustomCors()
-    .AddSwagger(documentName:"KnowMoreUserAPI", title:"KnowMoreUserAPI", version:"v1");
+    .AddCustomCors();
 
 builder.Services.AddSingleton<UserEventPublisher>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<UserEventPublisher>());
