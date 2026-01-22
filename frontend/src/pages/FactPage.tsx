@@ -5,7 +5,7 @@ import paperTableOfContent from "../assets/paper-table-of-content.svg";
 import arrowBackIcon from "../assets/icons/back-arrow.svg";
 import penIcon from "../assets/icons/pen.svg";
 import xIcon from "../assets/icons/x.svg";
-import { useCreateFact, useCreateFactGroup, useUpdateFact, useUpdateFactGroup } from "../hooks/useFact";
+import { useCreateFact, useCreateFactGroup, useDeleteFact, useUpdateFact, useUpdateFactGroup } from "../hooks/useFact";
 import { useAllUserFactQuery } from "../hooks/useFact";
 
 type PaperId = "table-of-content" | "content";
@@ -55,6 +55,11 @@ function FactPage() {
     isPending: isUpdatingFact,
   } = useUpdateFact();
 
+  const {
+    mutate: deleteFact,
+    isPending: isDeletingFact,
+  } = useDeleteFact();
+
   const handleCreateFactGroup = () => {
     if (!newFactGroup.trim()) 
       return;
@@ -80,11 +85,11 @@ function FactPage() {
   };
 
   const handleUpdateFact = (factId: string) => {
-    if (!editingFactValue.trim()) return;
-
-    updateFact(
-        { factId: factId, description: editingFactValue }
-      );
+    if (!editingFactValue.trim()) {
+      deleteFact({factId: factId});
+    } else {
+      updateFact({ factId: factId, description: editingFactValue });    
+    }
 
     setEditingFactId(null);
   };
@@ -322,7 +327,7 @@ function FactPage() {
                           if (e.key === "Escape") setEditingFactId(null);
                         }}
                         className="w-full text-xl focus:outline-none" 
-                        disabled={isUpdatingFact}
+                        disabled={isUpdatingFact || isDeletingFact}
                         autoFocus
                       />
                     ) : (

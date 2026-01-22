@@ -45,3 +45,7 @@ export interface UpdateFactRequest {
   factId: string;
   description: string;
 }
+
+export interface DeleteFactRequest {
+  factId: string;
+}

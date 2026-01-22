@@ -1,5 +1,5 @@
 import type { ApiResponse } from "../types/apiType";
-import type { CreateFactGroupRequest, CreateFactRequest, FactGroupResponse, FactResponse, UpdateFactGroupRequest, UpdateFactRequest } from "../types/factType";
+import type { CreateFactGroupRequest, CreateFactRequest, DeleteFactRequest, FactGroupResponse, FactResponse, UpdateFactGroupRequest, UpdateFactRequest } from "../types/factType";
 import { apiRequest } from "./apiRequest";
 
 export const fetchAllFactGroup = async (): Promise<ApiResponse<FactGroupResponse[]>> => {
@@ -38,4 +38,12 @@ export const updateFact = async (
   const endpoint = `${import.meta.env.VITE_FACT_BASE_URL}/facts/${requestBody.factId}`;
 
   return apiRequest<FactResponse>(endpoint, "PUT", {description:requestBody.description});
+};
+
+export const deleteFact = async (
+  requestBody: DeleteFactRequest
+): Promise<ApiResponse<void>> => {
+  const endpoint = `${import.meta.env.VITE_FACT_BASE_URL}/facts/${requestBody.factId}`;
+
+  return apiRequest<void>(endpoint, "DELETE");
 };

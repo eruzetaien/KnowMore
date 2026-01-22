@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { CreateFactGroupRequest, CreateFactRequest, FactGroupResponse, FactResponse, UpdateFactGroupRequest, UpdateFactRequest} from "../types/factType";
-import { createFact, createFactGroup, fetchAllFactGroup, updateFact, updateFactGroup } from "../api/factApi";
+import type { CreateFactGroupRequest, CreateFactRequest, DeleteFactRequest, FactGroupResponse, FactResponse, UpdateFactGroupRequest, UpdateFactRequest} from "../types/factType";
+import { createFact, createFactGroup, deleteFact, fetchAllFactGroup, updateFact, updateFactGroup } from "../api/factApi";
 import toast from "react-hot-toast";
 import { RequestStatus, type ApiResponse } from "../types/apiType";
 
@@ -194,11 +194,54 @@ export const useUpdateFact = () => {
           apiResponse.message : 
           "Failed to update fact";
 
-      toast.error(errorMessage, { id: "update-fact-group",});
+      toast.error(errorMessage, { id: "update-fact",});
     },
 
     onError: () => {
       toast.error("Failed to update fact", { id: "update-fact",});
+    },
+  });
+};
+
+export const useDeleteFact = () => {
+  const queryClient = useQueryClient();
+  return useMutation<ApiResponse<void>, Error, DeleteFactRequest>({
+    mutationFn: deleteFact,
+
+    onMutate: () => {
+      toast.loading("Deleting fact...", { id: "delete-fact" });
+    },
+
+    onSuccess: (apiResponse, apiRequest) => {
+      if (apiResponse.status == RequestStatus.Success){
+        queryClient.setQueryData<ApiResponse<FactGroupResponse[]>>(
+          ["userFact"],
+          (old) => {
+            if (!old) return old; 
+            
+            return {
+              ...old, 
+              data: (old.data ?? []).map(group => ({
+                ...group,
+                facts: group.facts?.filter(f => f.id !== apiRequest.factId),
+              })) 
+            };
+          }
+        );
+
+        toast.success(apiResponse.message, {id: "delete-fact",});
+        return;
+      }
+
+      const errorMessage = apiResponse.status === RequestStatus.BusinessValidationError ? 
+          apiResponse.message : 
+          "Failed to delete fact";
+
+      toast.error(errorMessage, { id: "delete-fact",});
+    },
+
+    onError: () => {
+      toast.error("Failed to delete fact", { id: "delete-fact",});
     },
   });
 };

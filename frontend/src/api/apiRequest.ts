@@ -16,7 +16,7 @@ export const apiRequest = async <T>(
     credentials: "include",
   };
 
-  if (method !== "GET") {
+  if (method !== "GET" && method !== "DELETE") {
     fetchOptions.body = JSON.stringify(body);
   }
 
