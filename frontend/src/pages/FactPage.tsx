@@ -301,7 +301,7 @@ function FactPage() {
                     }
                   }}
                   placeholder="Write a new fact"
-                  className="w-full text-xl focus:outline-none"
+                  className="w-full text-2xl focus:outline-none"
                   disabled={isCreatingFact}
                   autoFocus
                 />
@@ -326,13 +326,13 @@ function FactPage() {
                           }
                           if (e.key === "Escape") setEditingFactId(null);
                         }}
-                        className="w-full text-xl focus:outline-none" 
+                        className="w-full text-2xl focus:outline-none" 
                         disabled={isUpdatingFact || isDeletingFact}
                         autoFocus
                       />
                     ) : (
                       <span
-                        className={`${isWritingFact ? "hover:font-bold" : ""} `}
+                        className={`${isWritingFact ? "hover:font-bold" : ""}  text-2xl`}
                         onClick={() => {
                           setEditingFactId(fact.id);  
                           setEditingFactValue(fact.description);
