@@ -83,7 +83,7 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string roomKey = $"{RedisConstant.RoomPrefix}{request.RoomCode}";
-        Room room = await _redisService.GetAsync<Room>(roomKey) ?? throw new HubException($"Room not found");;
+        Room room = await _redisService.GetAsync<Room>(roomKey) ?? throw new HubException($"Room not found");
 
         PlayerSlot playerSlot = room.GetPlayerSlot(userId);
 
@@ -95,12 +95,14 @@ public class GameHub : Hub
         else
             room.Player2!.IsReady = request.IsReady;
 
-        room.HasGameStarted = room.Player1.IsReady && room.Player2!.IsReady;
+        bool isPlayer1Ready = room.Player1.IsReady;
+        bool isPlayer2Ready = room.Player2 != null && room.Player2.IsReady;
+        room.HasGameStarted = isPlayer1Ready && isPlayer2Ready;
 
         await _redisService.UpdateAsync<Room>(roomKey, room);
         
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
-                new { IsPlayer1Ready=room.Player1.IsReady, IsPlayer2Ready=room.Player2!.IsReady });
+                new { IsPlayer1Ready=isPlayer1Ready, IsPlayer2Ready=isPlayer2Ready});
 
         if (room.HasGameStarted)
         {
@@ -125,6 +127,9 @@ public class GameHub : Hub
     public async Task SendStatements(SendStatementsRequest request)
     {
         long userId = GetUserId();
+
+        long factId1 = long.Parse(request.FactId1);
+        long factId2 = long.Parse(request.FactId2);
         
         string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
         GameData game = await _redisService.GetAsync<GameData>(gameKey) ?? throw new HubException($"Game Data not found");;
@@ -132,13 +137,13 @@ public class GameHub : Hub
         if (playerSlot == PlayerSlot.Player1)
         {
             game.Player1Lie = request.Lie;
-            game.Player1Statements = Util.BuildPlayerStatements(request.FactId1, request.FactId2);
+            game.Player1Statements = Util.BuildPlayerStatements(factId1, factId2);
             game.Player1.IsReady = true;
         }
         else if (playerSlot == PlayerSlot.Player2)
         {
             game.Player2Lie = request.Lie;
-            game.Player2Statements = Util.BuildPlayerStatements(request.FactId1, request.FactId2);
+            game.Player2Statements = Util.BuildPlayerStatements(factId1, factId2);
             game.Player2!.IsReady = true;
         }
         else
@@ -162,12 +167,12 @@ public class GameHub : Hub
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
         if (playerSlot == PlayerSlot.Player1)
         {
-            game.Player1Answer = request.answerIdx;
+            game.Player1Answer = request.AnswerIdx;
             game.Player1.IsReady = true;
         }
         else if (playerSlot == PlayerSlot.Player2)
         {
-            game.Player2Answer = request.answerIdx;
+            game.Player2Answer = request.AnswerIdx;
             game.Player2!.IsReady = true;
         }
         else
@@ -185,13 +190,15 @@ public class GameHub : Hub
     public async Task SendRewardChoice(SendRewardChoiceRequest request)
     {
         long userId = GetUserId();
+
+        long factId = long.Parse(request.FactId);
         bool exists = await _db.SharedFacts
-                .AnyAsync(sf => sf.FactId == request.factId && sf.UserId == userId);
+                .AnyAsync(sf => sf.FactId == factId && sf.UserId == userId);
 
         if (exists)
             return;
 
-        SharedFact sharedFact = new() { FactId = request.factId, UserId = userId };
+        SharedFact sharedFact = new() { FactId = factId, UserId = userId };
         _db.SharedFacts.Add(sharedFact);
         await _db.SaveChangesAsync();
     }
@@ -225,10 +232,10 @@ public class GameHub : Hub
     
     private async Task<GameData> CreateGameData(Room room, string roomKey)
     {
-        string gameKey = $"{RedisConstant.GamePrefix}{room.JoinCode}";
+        string gameKey = $"{RedisConstant.GamePrefix}{room.Code}";
         GameData game = new()
         {
-            RoomCode = room.JoinCode,
+            RoomCode = room.Code,
             Player1 = room.Player1,
             Player2 = room.Player2,
         };
@@ -249,14 +256,14 @@ public class GameHub : Hub
         { 
             game.Player1Facts = await GetAllPlayerFact(game.Player1.Id);
             foreach (FactDTO fact in game.Player1Facts.SelectMany(g => g.Facts))
-                game.PlayerFactDescriptionMap.Add(fact.Id, fact.Description);
+                game.PlayerFactDescriptionMap.Add(long.Parse(fact.Id), fact.Description);
         }
 
         if (game.Player2Facts.Count <= 0)
         { 
             game.Player2Facts = game.Player2 != null ? await GetAllPlayerFact(game.Player2.Id) : [] ;
             foreach (FactDTO fact in game.Player2Facts.SelectMany(g => g.Facts))
-                game.PlayerFactDescriptionMap.Add(fact.Id, fact.Description);
+                game.PlayerFactDescriptionMap.Add(long.Parse(fact.Id), fact.Description);
         }
 
         await _redisService.UpdateAsync<GameData>(gameKey, game);

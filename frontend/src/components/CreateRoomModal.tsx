@@ -18,7 +18,7 @@ export default function CreateRoomModal({
 }: CreateRoomModalProps) {
   const navigate = useNavigate();
   const [roomName, setRoomName] = useState("");
-  const { mutate: createRoom, data: createdRoom, isPending, isError: isCreateError, error: createError } = useCreateRoom();
+  const { mutate: createRoom, data: response, isPending, isError: isCreateError, error: createError } = useCreateRoom();
   const {connect} = useGameHub();
 
   const handleCreate = () => {
@@ -29,17 +29,17 @@ export default function CreateRoomModal({
     useEffect(() => {
       let isMounted = true;
 
-      const setup = async (joinCode : string) => {
+      const setup = async (roomCode : string) => {
         await connect();
         if (isMounted)
-          navigate(`/room/${joinCode}`);
+          navigate(`/room/${roomCode}`);
       };
         
-      if (createdRoom) 
-        setup(createdRoom.joinCode);
+      if (response?.data) 
+        setup(response.data.roomCode);
 
       return () => { isMounted = false;};
-    }, [createdRoom, navigate]);
+    }, [response, navigate]);
 
   if (!isOpen) return null;
 

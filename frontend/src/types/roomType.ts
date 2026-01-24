@@ -2,7 +2,7 @@ import type { PlayerSlot } from "./playerType";
 
 // Rest API DTO
 export interface RoomResponse {
-  joinCode: string;
+  code: string;
   name: string;
   roomMaster: string;
 }
@@ -15,6 +15,6 @@ export interface JoinRoomResponse {
   slot: PlayerSlot;
 }
 
-export interface PlayerRoomResponse {
-  roomCode: string;
+export interface RoomCodeResponse {
+  roomCode : string;
 }

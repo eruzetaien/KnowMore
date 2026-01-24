@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-public class CreateRoomDto
+public class CreateRoomRequest
 {
     [Required(ErrorMessage = "Name is required.")]
     [StringLength(50, MinimumLength = 4, ErrorMessage = "Name must be between 4 and 50 characters.")]
@@ -10,13 +10,13 @@ public class CreateRoomDto
 
 public class RoomDto
 {
-    public string JoinCode { get; set; }
+    public string Code { get; set; }
     public string Name { get; set; }
     public string RoomMaster { get; set; }
 
     public RoomDto(Room room)
     {
-        JoinCode = room.JoinCode;
+        Code = room.Code;
         Name = room.Name;
         RoomMaster = room.Player1.Name;
     }
@@ -62,19 +62,22 @@ public class SendStatementsRequest()
 {
     public string RoomCode { get; set; } = string.Empty;
     public string Lie { get; set; } = string.Empty;
-    public long FactId1 { get; set; }
-    public long FactId2 { get; set; }
+    public string FactId1 { get; set; } = string.Empty;
+    public string FactId2 { get; set; } = string.Empty;
 }
 
 public class SendAnswerRequest()
 {
     public string RoomCode { get; set; } = string.Empty;
-    public int answerIdx { get; set; }
+    public int AnswerIdx { get; set; }
 }
 
 public class SendRewardChoiceRequest()
 {
-    public long factId { get; set;} 
+    public string FactId { get; set;} = string.Empty;
 }
 
-public record UserNameDto(string Username);
+public class RoomCodeDto()
+{
+    public string RoomCode {get; set;} = string.Empty;
+}

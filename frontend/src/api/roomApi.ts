@@ -1,31 +1,24 @@
-import type { CreateRoomRequest, PlayerRoomResponse, RoomResponse } from "../types/roomType";
+import type { ApiResponse } from "../types/apiType";
+import type { CreateRoomRequest, RoomCodeResponse, RoomResponse } from "../types/roomType";
 import { apiRequest } from "./apiRequest";
 
 export const createRoom = async (
   requestBody: CreateRoomRequest
-): Promise<RoomResponse> => {
+): Promise<ApiResponse<RoomCodeResponse>> => {
   const endpoint = `${import.meta.env.VITE_GAME_BASE_URL}/rooms`;
 
-  return apiRequest<RoomResponse>(endpoint, "POST", requestBody);
+  return await apiRequest<RoomCodeResponse>(endpoint, "POST", requestBody);
 };
 
-export const fetchAllRooms = async (): Promise<RoomResponse[]> => {
+export const fetchAllRooms = async (): Promise<ApiResponse<RoomResponse[]>> => {
   const endpoint = `${import.meta.env.VITE_GAME_BASE_URL}/rooms`;
 
-  return apiRequest<RoomResponse[]>(endpoint, "GET");
+  return await apiRequest<RoomResponse[]>(endpoint, "GET");
 };
 
-export const fetchPlayerRoom = async (): Promise<PlayerRoomResponse | null> => {
+export const fetchPlayerRoom = async (): Promise<ApiResponse<RoomCodeResponse>> => {
   const endpoint = `${import.meta.env.VITE_GAME_BASE_URL}/rooms/user`;
-  try {
-    const result = await apiRequest<PlayerRoomResponse>(endpoint, "GET");
-    return result;
-
-  } catch (error:any) {
-    if (error.message.includes("HTTP 404")) {
-      return null;
-    }
-    throw error;
-  }
+    
+  return await apiRequest<RoomCodeResponse>(endpoint, "GET");
   
 };

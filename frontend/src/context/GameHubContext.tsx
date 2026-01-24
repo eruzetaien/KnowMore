@@ -23,9 +23,9 @@ type GameHubContextType = GameHubData & {
   disconnect: () => Promise<void>;
   joinRoom: (roomCode: string) => Promise<void>;
   setReadyStateToStartGame: (roomCode: string, isReady: boolean) => Promise<void>;
-  sendStatements: (roomCode: string, lie: string, factId1: number, factId2: number) => Promise<void>;
+  sendStatements: (roomCode: string, lie: string, factId1: string, factId2: string) => Promise<void>;
   sendAnswer:  (roomCode: string, answerIdx: number) => Promise<void>;
-  sendRewardChoice: (factId: number) => Promise<void>;
+  sendRewardChoice: (factId: string) => Promise<void>;
   setReadyStateForNextGame: (roomCode: string, isReady: boolean) => Promise<void>;
   kickPlayer: (roomCode: string) => Promise<void>;
 };
@@ -66,12 +66,18 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     connection.on("ReceivePlayerReadiness", (response: PlayerReadinessResponse) => {
-      setData(prev =>({ ...prev,
-        allPlayerData : {...prev.allPlayerData, 
-          isPlayer1Ready : response.isPlayer1Ready,
-          isPlayer2Ready : response.isPlayer2Ready
+      setData(prev => ({
+        ...prev,
+        allPlayerData: {
+          ...prev.allPlayerData,
+          player1: prev.allPlayerData.player1
+            ? { ...prev.allPlayerData.player1, isReady: response.isPlayer1Ready }
+            : null,
+          player2: prev.allPlayerData.player2
+            ? { ...prev.allPlayerData.player2, isReady: response.isPlayer2Ready }
+            : null,
         }
-      }))
+      }));
     });
 
     connection.on("InitPlayer", (response: InitPlayerResponse) => {
@@ -167,7 +173,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 
   const sendStatements = useCallback(
-    async (roomCode: string, lie: string, factId1: number, factId2: number) => {
+    async (roomCode: string, lie: string, factId1: string, factId2: string) => {
       await invokeWithConnection("SendStatements", {roomCode, lie, factId1, factId2});
     },
     [invokeWithConnection]
@@ -181,7 +187,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 
   const sendRewardChoice = useCallback(
-    async (factId: number) => {
+    async (factId: string) => {
       await invokeWithConnection("SendRewardChoice", {factId});
     },
     [invokeWithConnection]

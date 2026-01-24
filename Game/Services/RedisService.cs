@@ -21,7 +21,7 @@ public class RedisService
 
         try
         {
-            return JsonSerializer.Deserialize<T>(value!)
+            return JsonSerializer.Deserialize<T>((string)value!)
                 ?? throw new InvalidOperationException($"{typeof(T).Name} data corrupted");
         }
         catch (JsonException ex)

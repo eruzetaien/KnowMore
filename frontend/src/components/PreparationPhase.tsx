@@ -12,14 +12,14 @@ import PlayerState from "./PlayerState";
 export default function PreparationPhase() {
   const { allPlayerData, isLoading: hubLoading, sendStatements, room, preparationPhaseData } = useGameHub();
 
-  const [selectedFacts, setSelectedFacts] = useState<number[]>([]);
+  const [selectedFacts, setSelectedFacts] = useState<string[]>([]);
   const [lie, setLie] = useState("");
 
   const { minutes, seconds } = useCountdown(180); // 3 minutes
 
   if (hubLoading) return <p>Loading hub connection...</p>;
 
-  const handleFactSelect = (factId: number) => {
+  const handleFactSelect = (factId: string) => {
     setSelectedFacts((prev) => {
       if (prev.includes(factId)) {
         return prev.filter((id) => id !== factId);
@@ -36,7 +36,7 @@ export default function PreparationPhase() {
       alert("Please select exactly 2 facts and enter a lie.");
       return;
     }
-    await sendStatements(room.joinCode, lie, selectedFacts[0], selectedFacts[1]);
+    await sendStatements(room.code, lie, selectedFacts[0], selectedFacts[1]);
     setSelectedFacts([]);
     setLie("");
   };

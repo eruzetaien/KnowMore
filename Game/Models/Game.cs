@@ -36,7 +36,7 @@ public abstract class HasPlayersBase
 
 public class Room : HasPlayersBase
 {
-    public required string JoinCode { get; set; }
+    public required string Code { get; set; }
     public required string Name { get; set; }
     public bool HasGameStarted { get; set; }
 }

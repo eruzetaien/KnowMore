@@ -30,7 +30,7 @@ function RoomPage() {
   const handleReadyClick = () => {
     const newState = !ready;
     setReady(newState);
-    setReadyStateToStartGame(room.joinCode, newState); // if GameHub provides ready state update
+    setReadyStateToStartGame(room.code, newState); // if GameHub provides ready state update
   };
 
   if (allPlayerData.player1?.isReady && allPlayerData.player2?.isReady) 
@@ -45,7 +45,7 @@ function RoomPage() {
       <div className="text-center mb-6">
         <h2 className="text-5xl text-black"> {room.name ?? "Unknown"} </h2>
         <p className=" text-[#0A6602] text-xl -mt-2">
-            Join Code: <span className="font-bold">{room.joinCode ?? roomCode}</span>
+            Join Code: <span className="font-bold">{room.code ?? roomCode}</span>
         </p>
       </div>
 
@@ -61,7 +61,7 @@ function RoomPage() {
           isReady={allPlayerData.player2?.isReady ?? false}
           sprite={player2Idle}
           isFlipped={true}
-          onKick={clientPlayerData.slot == PlayerSlot.Player1 ?() => kickPlayer(room.joinCode) : undefined}
+          onKick={clientPlayerData.slot == PlayerSlot.Player1 ?() => kickPlayer(room.code) : undefined}
         />
       </div>
       

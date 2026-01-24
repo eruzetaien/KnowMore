@@ -11,7 +11,7 @@ export default function PlayingPhase() {
 
   const handleSubmit = () => {
     if (selectedIdx !== null) {
-      sendAnswer(room.joinCode, selectedIdx);
+      sendAnswer(room.code, selectedIdx);
     }
   };
 

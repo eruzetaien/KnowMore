@@ -6,7 +6,7 @@ using StackExchange.Redis;
 var builder = WebApplication.CreateBuilder(args);
 
 // Load .env variables
-Env.Load();
+Env.Load(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
 
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect("localhost"));
@@ -37,13 +37,13 @@ app.UseAuthorization();
 app.MapHub<GameHub>("/gamehub")
    .RequireAuthorization();
 
-app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto, RedisService redisService, UserService userService) =>
+app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomRequest createReq, RedisService redisService, UserService userService) =>
 {
     if (!userClaim.TryGetUserId(out long userId))
         return Results.Unauthorized();
 
-    string joinCode = Util.GetRandomCode();
-    string roomKey = $"{RedisConstant.RoomPrefix}{joinCode}";
+    string code = Util.GetRandomCode();
+    string roomKey = $"{RedisConstant.RoomPrefix}{code}";
     PlayerData player1 = new()
     {
         Id = userId,
@@ -51,8 +51,8 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
     };
     Room room = new()
     {
-        JoinCode = joinCode,
-        Name = createDto.Name,
+        Code = code,
+        Name = createReq.Name,
         Player1 = player1,
         Player2 = null,
     };
@@ -63,12 +63,17 @@ app.MapPost("/rooms", async (ClaimsPrincipal userClaim, CreateRoomDto createDto,
     var expiryAt = DateTimeOffset.UtcNow.AddMinutes(ttlInMinutes).ToUnixTimeSeconds();
     await redisService.AddToSortedSetAsync(RedisConstant.RoomSetKey, roomKey, expiryAt);
 
-    await redisService.SetAsync($"{RedisConstant.UserRoomPrefix}{userId}", joinCode);
-
-    return Results.Ok(new { room.JoinCode });
+    await redisService.SetAsync($"{RedisConstant.UserRoomPrefix}{userId}", code);
+    
+    Response<RoomCodeDto> response = new ()
+    {
+        Status = RequestStatus.Success,
+        Data = new () {RoomCode = room.Code}
+    };
+    return Results.Ok(response);
 })
 .RequireAuthorization()
-.AddEndpointFilter<ValidationFilter<CreateRoomDto>>();
+.AddEndpointFilter<ValidationFilter<CreateRoomRequest>>();
 
 app.MapGet("/rooms", async (ClaimsPrincipal userClaim, RedisService redisService) =>
 {
@@ -92,7 +97,7 @@ app.MapGet("/rooms", async (ClaimsPrincipal userClaim, RedisService redisService
     {
         if (!roomJson.IsNullOrEmpty)
         {
-            Room? room = JsonSerializer.Deserialize<Room>(roomJson!);
+            Room? room = JsonSerializer.Deserialize<Room>((string)roomJson!);
             if (room is null)
                 continue;
 
@@ -110,7 +115,12 @@ app.MapGet("/rooms", async (ClaimsPrincipal userClaim, RedisService redisService
     if (hasStartedRoomKeys.Count > 0)
         await redisService.RemoveFromSortedSetAsync(RedisConstant.RoomSetKey, hasStartedRoomKeys.ToArray());
 
-    return Results.Ok(rooms);
+    Response<List<RoomDto>> response = new ()
+    {
+        Status = RequestStatus.Success,
+        Data = rooms
+    };
+    return Results.Ok(response);
 })
 .RequireAuthorization();
 
@@ -122,18 +132,33 @@ app.MapGet("/rooms/user", async (ClaimsPrincipal userClaim, RedisService redisSe
 
     string userRoomKey = $"{RedisConstant.UserRoomPrefix}{userId}";
     string? roomCode = await redisService.GetAsync<string>(userRoomKey);
-
+    
     if (string.IsNullOrEmpty(roomCode))
-        return Results.NotFound(new { message = "User is not in any room." });
+        return UserRoomNotFound();
+        
 
     if (!await redisService.ExistsAsync($"{RedisConstant.RoomPrefix}{roomCode}"))
     {
         await redisService.DeleteAsync(userRoomKey);
-        return Results.NotFound(new { message = "User is not in any room." });
+        return UserRoomNotFound();
     }
 
-    return Results.Ok(new { roomCode });
+    Response<RoomCodeDto> response = new ()
+    {
+        Status = RequestStatus.Success,
+        Data = new (){RoomCode = roomCode}
+    };
+    return Results.Ok(response);
 })
 .RequireAuthorization();
+
+IResult UserRoomNotFound()
+{
+    return Results.NotFound(new Response<FactGroupDTO>
+    {
+        Status = RequestStatus.BusinessValidationError,
+        Message = ErrorMessages.UserRoomNotFound 
+    });
+}
 
 app.Run();
