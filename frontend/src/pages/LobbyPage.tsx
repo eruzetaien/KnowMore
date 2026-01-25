@@ -11,8 +11,9 @@ import { useGameHub } from "../context/GameHubContext";
 
 function LobbyPage() {
   const navigate = useNavigate();
-  const { data: rooms, isLoading, isError, error, refetch } = useAllRoomsQuery();
-  const { data: playerRoom } = usePlayerRoomQuery();
+  const { data: roomsResponse, isLoading, isError, error, refetch } = useAllRoomsQuery();
+  const rooms = roomsResponse?.data;
+  const { data: playerRoomResponse } = usePlayerRoomQuery();
   const {connect} = useGameHub();
 
   const [showCreate, setShowCreate] = useState(false);
@@ -23,10 +24,10 @@ function LobbyPage() {
   }
 
   useEffect(() => {
-    if (playerRoom?.roomCode?.trim())
-      joinRoom(playerRoom.roomCode);
+    if (playerRoomResponse?.data?.roomCode?.trim())
+      joinRoom(playerRoomResponse.data.roomCode);
 
-  }, [playerRoom, navigate]);
+  }, [playerRoomResponse, navigate]);
 
   return (
     <div className="flex h-full w-full justify-center items-center">
@@ -67,13 +68,13 @@ function LobbyPage() {
             <ul className="divide-y-2 divide-pastel-grey mb-4">
               {rooms.map((room) => (
                 <li
-                  key={room.joinCode}
+                  key={room.code}
                   className="grid grid-cols-[1fr_1fr_auto] items-center py-2"
                 >
                   <span className="text-lg" >{room.name}</span>
                   <span  className="text-lg">{room.roomMaster}</span>
                   <button
-                    onClick={() => joinRoom(room.joinCode)}
+                    onClick={() => joinRoom(room.code)}
                     className="hover:scale-105 cursor-pointer"
                   >
                   <img
