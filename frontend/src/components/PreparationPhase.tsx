@@ -7,6 +7,7 @@ import player2Thinking from "../assets/players/state/player2-thinking.png";
 import player1Chilling from "../assets/players/state/player1-chilling.png";
 import player2Chilling from "../assets/players/state/player2-chilling.png";
 import PlayerState from "./PlayerState";
+import CouponCard from "./CouponCard";
 
 
 export default function PreparationPhase() {
@@ -64,16 +65,16 @@ export default function PreparationPhase() {
         />
         <div className="flex flex-col w-full items-center justify-center">
           <div className="w-4/5 bg-platinum rounded-3xl border-4 border-heathered-grey p-6 outline-2 -outline-offset-7 outline-heathered-grey">
-            <div className="w-full"> 
-              <div className="border-2 border-coupon-fill">
-                <div className="border-4 border-coupon-white">
-                  <div className="border-4 border-coupon-fill">
-                    <div className="bg-[#E1D9CE] p-2 text-xl">
-                      Sed et vulputate massa 
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="flex flex-col gap-y-2">
+              <CouponCard>
+                  <div>{selectedFacts[0]}</div>
+              </CouponCard>
+              <CouponCard>
+                  <div>{selectedFacts[1]}</div>
+              </CouponCard>
+              <CouponCard isRed={true}>
+                  <div>{lie}</div>
+              </CouponCard>
             </div>
           </div>
         </div>

@@ -59,6 +59,11 @@ body {
   border-image-slice: 33%;
   border-image-width:16px;
 }
+.border-coupon-red {
+  border-image: url("assets/border-red.svg");
+  border-image-slice: 33%;
+  border-image-width:16px;
+}
 
 .border-profile {
   border : 32px solid;
