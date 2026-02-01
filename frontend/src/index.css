@@ -101,3 +101,21 @@ body {
 .emote-anim {
   animation: fadeOutScale 1.2s forwards;
 }
+
+@keyframes highlightSlideIn {
+  from {
+    background-size: 0% 100%;
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+
+.highlight {
+  background: linear-gradient(to right, #B2FF3E 100%, transparent 0%);
+  background-repeat: no-repeat;
+  background-position: left;
+  animation: highlightSlideIn 0.75s forwards;
+}
+
+
