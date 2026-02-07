@@ -118,4 +118,10 @@ body {
   animation: highlightSlideIn 0.75s forwards;
 }
 
+.red-highlight {
+  background: linear-gradient(to right, #FF7171 100%, transparent 0%);
+  background-repeat: no-repeat;
+  background-position: left;
+  animation: highlightSlideIn 0.75s forwards;
+}
 

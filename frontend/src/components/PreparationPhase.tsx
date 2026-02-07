@@ -285,7 +285,7 @@ export default function PreparationPhase() {
                     <ul className="space-y-4 text-xl px-10">
                       
                       {activeGroup.facts.map((fact) => (
-                        <li key={fact.id} className="pb-2]">
+                        <li key={fact.id}>
                           <span
                             className={`text-2xl cursor-pointer ${
                               selectedFacts.some((f) => f.id === fact.id) ? "highlight" : ""

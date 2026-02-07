@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { useGameHub } from "../context/GameHubContext";
 import { PlayerSlot } from "../types/playerType";
+import { useCountdown } from "../hooks/useCountdown";
+import PlayerState from "./PlayerState";
+
+import player1Thinking from "../assets/players/state/player1-thinking.png";
+import player2Thinking from "../assets/players/state/player2-thinking.png";
+import player1Chilling from "../assets/players/state/player1-chilling.png";
+import player2Chilling from "../assets/players/state/player2-chilling.png";
+import sendButton from "../assets/buttons/send-button.svg";
 
 export default function PlayingPhase() {
   const { playingPhaseData, allPlayerData, clientPlayerData, isLoading: hubLoading, room, sendAnswer } = useGameHub();
@@ -15,53 +23,82 @@ export default function PlayingPhase() {
     }
   };
 
+  const { minutes, seconds } = useCountdown(180); // 3 minutes
+  
   // Determine if this player already submitted an answer
-  const isAlreadyAnswered =
+  const isAnswerSent =
     (clientPlayerData.slot == PlayerSlot.Player1 && allPlayerData.player1?.isReady) ||
     (clientPlayerData.slot == PlayerSlot.Player2 && allPlayerData.player2?.isReady);
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">Playing Phase</h2>
-
-      <div className="mb-6">
-        <h3 className="font-semibold">Opponent’s Statements</h3>
-        <ul className="space-y-2">
-          {playingPhaseData.opponentStatements.map((opt) => (
-            <li
-              key={opt.idx}
-              onClick={() => !isAlreadyAnswered && setSelectedIdx(opt.idx)}
-              className={`p-2 rounded cursor-pointer transition
-                ${
-                  selectedIdx === opt.idx
-                    ? "bg-blue-600 text-white font-bold"
-                    : "bg-gray-700 hover:bg-gray-600"
-                } ${
-                  isAlreadyAnswered ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-            >
-              {opt.description}
-            </li>
-          ))}
-        </ul>
+    <div className="flex flex-col justify-center items-center">
+      {/* Timer */}
+      <div className="flex flex-col justify-center items-center mt-4 mb-6 text-black">
+        <span className="text-xl -mb-2" > Timer</span>
+        <h2 className="text-5xl" >{minutes}:{seconds.toString().padStart(2, "0")}</h2>
       </div>
 
-      <button
-        onClick={handleSubmit}
-        disabled={selectedIdx === null || isAlreadyAnswered}
-        className={`px-4 py-2 rounded-lg transition ${
-          selectedIdx === null || isAlreadyAnswered
-            ? "bg-gray-500 cursor-not-allowed"
-            : "bg-green-500 hover:bg-green-600"
-        }`}
-      >
-        Submit Answer
-      </button>
+      <h2 className="text-5xl mb-4">Two truths hide one lie, can you uncover it?</h2>
 
-      <div className="mt-6">
-        <p>Player 1 ready: {allPlayerData.player1?.isReady ? "✅" : "❌"}</p>
-        <p>Player 2 ready: {allPlayerData.player2?.isReady ? "✅" : "❌"}</p>
+      {/* Player State */}
+      <div className="flex justify-between w-11/12">
+        <PlayerState
+          name={allPlayerData.player1?.name}
+          score={allPlayerData.player1Score}
+          isReady={allPlayerData.player1?.isReady ?? false}
+          chillingImg={player1Chilling}
+          thinkingImg={player1Thinking}
+        />
+        <div className="flex flex-col w-full items-center justify-center">
+          <div className="w-4/5 bg-platinum rounded-3xl border-4 border-heathered-grey p-6 outline-2 -outline-offset-7 outline-heathered-grey">
+            <div className="flex flex-col gap-y-2">
+
+            <ul className="space-y-3 p-4">
+              {playingPhaseData.opponentStatements.map((opt) => (
+                <li key={opt.idx}>
+                  <span
+                    className={`rounded cursor-pointer transition text-xl
+                      ${
+                        selectedIdx === opt.idx ? "red-highlight" : ""
+                      } ${
+                        isAnswerSent ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    onClick={() => !isAnswerSent && setSelectedIdx(opt.idx)}
+                  >
+                    {opt.description}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            </div>
+          </div>
+        </div>
+        <PlayerState
+          name={allPlayerData.player2?.name}
+          score={allPlayerData.player2Score}
+          isReady={allPlayerData.player2?.isReady ?? false}
+          chillingImg={player2Chilling}
+          thinkingImg={player2Thinking}
+          isFlipped={true}
+        />
       </div>
+
+      <div className="mt-10">
+        {isAnswerSent ? (
+          <p className="text-3xl">
+            Waiting opponent's decision ...
+          </p>
+        ) : (
+          <button
+            onClick={handleSubmit}
+            className="cursor-pointer hover:scale-105"
+          >
+            <img src={sendButton} alt="send button" />
+          </button>
+        )}
+      </div>
+      
     </div>
   );
 }
