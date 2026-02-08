@@ -1,14 +1,34 @@
 import { useState } from "react";
 import { useGameHub } from "../context/GameHubContext";
+import PlayerState from "./PlayerState";
+import { PlayerSlot } from "../types/playerType";
+
+import player1Losing from "../assets/players/state/player1-losing.png";
+import player2Losing from "../assets/players/state/player2-losing.png";
+import player1Winning from "../assets/players/state/player1-winning.png";
+import player2Winning from "../assets/players/state/player2-losing.png";
+import player1Chilling from "../assets/players/state/player1-chilling.png";
+import player2Chilling from "../assets/players/state/player2-chilling.png";
+import nextGameButton from "../assets/buttons/next-game-button.svg";
+import cancelButton from "../assets/buttons/cancel-button.svg";
+import rewardButton from "../assets/buttons/reward-button.svg";
+import keepButton from "../assets/buttons/keep-button.svg";
+import rewardCard from "../assets/container/reward-card.svg";
+import CouponCard from "./CouponCard";
+import xLightIcon from "../assets/icons/x-light.svg";
+
 
 export default function ResultPhase() {
-  const { isLoading: hubLoading, allPlayerData, resultPhaseData, setReadyStateForNextGame, sendRewardChoice, room } = useGameHub();
-  const [selectedRewardId, setSelectedRewardId] = useState<number | null>(null);
+  const { isLoading: hubLoading, allPlayerData, resultPhaseData, setReadyStateForNextGame, sendRewardChoice, room, clientPlayerData } = useGameHub();
+  const [selectedRewardId, setSelectedRewardId] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
-
-  const [ready, setReady] = useState(false);
+  const [isChoosingReward, setIsChoosingReward] = useState<boolean>(false);
 
   if (hubLoading) return <p>Loading hub connection...</p>;
+
+  const isPlayerReady =
+      (clientPlayerData.slot == PlayerSlot.Player1 && allPlayerData.player1?.isReady) ||
+      (clientPlayerData.slot == PlayerSlot.Player2 && allPlayerData.player2?.isReady);
 
   const handleChooseReward = () => {
     if (selectedRewardId !== null) {
@@ -18,108 +38,133 @@ export default function ResultPhase() {
   };
 
   const handleNextGame = () => {
-    const newState = !ready;
-    setReady(newState);
-    setReadyStateForNextGame(room.joinCode, newState)
+    setReadyStateForNextGame(room.code, true)
   };
+
+  const handleCancelNextGame = () => {
+    setReadyStateForNextGame(room.code, false)
+  }
 
   const canChooseReward =
     resultPhaseData.isPlayerCorrect &&
     resultPhaseData.rewardStatements &&
     resultPhaseData.rewardStatements.length > 0;
 
-  const canGoNextGame = !canChooseReward || submitted; 
-
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">Result Phase</h2>
-      <h3 className="text-xl font-bold mb-4">
-        {resultPhaseData.isPlayerCorrect ? "You Are Correct!" : "You are Wrong~"}
-      </h3>
-
-      {/* Reward choice flow */}
-      {canChooseReward && !submitted && (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <p className="font-semibold">
-              Choose one fact of your opponent that you want to save:
-            </p>
-            {resultPhaseData.rewardStatements!.map((reward) => (
-              <label
-                key={reward.id}
-                className="flex items-center space-x-2 cursor-pointer"
-              >
-                <input
-                  type="radio"
-                  name="reward"
-                  value={reward.id}
-                  checked={selectedRewardId === reward.id}
-                  onChange={() => setSelectedRewardId(reward.id)}
-                />
-                <span>{reward.description}</span>
-              </label>
-            ))}
+      <div className="flex flex-col justify-center items-center">
+      
+        {/* Player State */}
+        <div className="flex justify-between w-11/12">
+          <PlayerState
+            name={allPlayerData.player1?.name}
+            score={allPlayerData.player1Score}
+            isReady={allPlayerData.player1?.isReady ?? false}
+            chillingImg={player1Chilling}
+            thinkingImg={resultPhaseData.isPlayerCorrect ? player1Winning : player1Losing}
+          />
+          <div className="flex flex-col w-full items-center justify-center">
+            {resultPhaseData.isPlayerCorrect ? (
+              <div className="flex flex-col justify-center items-center gap-y-4">
+                <h3 className="text-5xl font-bold">Right Choice!</h3>
+                {canChooseReward && (
+                  <button
+                    onClick={() => setIsChoosingReward(true)}
+                    className="cursor-pointer hover:scale-105 "
+                  >
+                    <img src={rewardButton} alt="send button" />
+                  </button>
+                )}
+                
+              </div>
+            )
+             : (
+              <div className="flex flex-col justify-center text-center">
+                <h3 className="text-5xl font-bold">Fooled!</h3>
+                <h4 className="text-2xl">That one was truth.</h4>
+              </div>
+            )}
           </div>
-
-          <button
-            onClick={handleChooseReward}
-            disabled={selectedRewardId === null}
-            className="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg shadow text-white font-semibold disabled:opacity-50"
-          >
-            {"Submit Reward Choice"}
-          </button>
+          <PlayerState
+            name={allPlayerData.player2?.name}
+            score={allPlayerData.player2Score}
+            isReady={allPlayerData.player2?.isReady ?? false}
+            chillingImg={player2Chilling}
+            thinkingImg={resultPhaseData.isPlayerCorrect ? player2Winning : player2Losing}
+            isFlipped={true}
+          />
         </div>
-      )}
 
-      {/* Next Game Button */}
-      {canGoNextGame && (
-        <div className="mt-6 space-y-4">
-          {submitted && (
-            <p className="text-green-400 font-semibold">
-              Reward submitted successfully 🎉
-            </p>
+        <div className="mt-10">
+          {isPlayerReady ? (
+            <button
+              onClick={handleCancelNextGame}
+              className="cursor-pointer hover:scale-105"
+            >
+              <img src={cancelButton} alt="cancel button" />
+            </button>
+          ) : (
+            <button
+              onClick={handleNextGame}
+              className="cursor-pointer hover:scale-105"
+            >
+              <img src={nextGameButton} alt="next game button" />
+            </button>
           )}
-          
-          {/* Ready Button */}
-          <button
-            onClick={handleNextGame}
-            className={`w-full py-3 rounded-xl font-semibold transition ${
-              ready
-                ? "bg-green-600 hover:bg-green-700"
-                : "bg-red-600 hover:bg-red-700"
-            }`}
-          >
-            {ready ? "Cancel" : "Next Game"}
-          </button>
+        </div>
+        
+      </div>
 
-          {/* Players */}
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="flex flex-col items-center p-4 bg-gray-800 rounded-xl">
-              <h2 className="font-semibold">Master</h2>
-              <p className="mt-2">{allPlayerData.player1?.id ?? "-"}</p>
-              <span
-                className={`text-xs mt-1 ${
-                  allPlayerData.player1?.isReady ? "text-green-400" : "text-red-400"
-                }`}
-              >
-                {allPlayerData.player1?.isReady ? "Ready" : "Not Ready"}
-              </span>
+      {isChoosingReward && (
+        <div className="fixed inset-0 z-50 w-screen h-screen bg-black/50  backdrop-blur-xs" onClick={() => setIsChoosingReward(false)}>
+          <div className="flex justify-center overflow-clip " onClick={(e) => e.stopPropagation()}>
+            <div className="absolute h-full flex justify-center items-center">
+              <div className="relative flex justify-center">
+                <img className="w-[816px] h-[553px]" src={rewardCard} alt=""/> 
 
-            </div>
+                <div className="absolute z-10 w-[816px] flex justify-center mt-8">
+                  <button
+                    onClick={() => setIsChoosingReward(false)}
+                    className="cursor-pointer hover:scale-105"
+                  >
+                    <img src={xLightIcon}/>
+                  </button>
+                </div>
 
-            <div className="flex flex-col items-center p-4 bg-gray-800 rounded-xl">
-              <h2 className="font-semibold">Player 2</h2>
-              <p className="mt-2">{allPlayerData.player2?.id ?? "-"}</p>
-              <span
-                className={`text-xs mt-1 ${
-                  allPlayerData.player2?.isReady ? "text-green-400" : "text-red-400"
-                }`}
-              >
-                {allPlayerData.player2?.isReady ? "Ready" : "Not Ready"}
-              </span>
+                <div className="absolute w-[816px] h-[553px] flex flex-col justify-between items-center pt-52 pb-12">
+                  <ul className="space-y-3 px-12 w-full">
+                    {resultPhaseData.rewardStatements!.map((reward) => (
+                      <li key={reward.id}
+                        className={`${submitted ? "opacity-70" : "cursor-pointer hover:scale-105"}`}
+                        onClick={() => {
+                          if (submitted)
+                            return;
+                          setSelectedRewardId(reward.id)}
+                        }
+                      >
+                        <CouponCard color={selectedRewardId === reward.id? "orange" : ""}>
+                          <div>
+                            {reward.description}
+                          </div>
+                        </CouponCard>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <button
+                    onClick={handleChooseReward}
+                    className={`${submitted ? "opacity-70" : "cursor-pointer hover:scale-105"}`}
+                    disabled={selectedRewardId === null || submitted}
+                  >
+                    <img src={keepButton} alt="keep reward button" />
+                  </button>
+
+                </div>
+              </div>
+
             </div>
           </div>
-        </div>        
+        </div>
       )}
     </div>
   );

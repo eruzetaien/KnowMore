@@ -139,7 +139,7 @@ export default function PreparationPhase() {
                 </CouponCard>
               </div>
 
-              <CouponCard isRed={true}>
+              <CouponCard color={"red"}>
                 <textarea
                   value={lie}
                   onChange={(e) => {

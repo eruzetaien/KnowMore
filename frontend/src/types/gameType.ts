@@ -15,7 +15,7 @@ export interface PlayerStatement {
 }
 
 export interface RewardStatement {
-  id : number,
+  id : string,
   description: string
 }
 

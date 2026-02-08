@@ -65,6 +65,18 @@ body {
   border-image-width:16px;
 }
 
+.border-coupon-light-orange {
+  border-image: url("assets/border-light-orange.svg");
+  border-image-slice: 33%;
+  border-image-width:16px;
+}
+
+.border-coupon-orange {
+  border-image: url("assets/border-orange.svg");
+  border-image-slice: 33%;
+  border-image-width:16px;
+}
+
 .border-profile {
   border : 32px solid;
   border-image: url("assets/border-profile.svg");
