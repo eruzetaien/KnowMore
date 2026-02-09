@@ -341,7 +341,8 @@ public class GameHub : Hub
         await Clients.User(game.Player1.Id.ToString()).SendAsync("InitResultPhase",
             new
             {
-                isPlayerCorrect = isPlayer1Correct,
+                isPlayer1Correct,
+                isPlayer2Correct,
                 rewardStatements = player1rewardStatement,
                 player1Score = game.Player1Score,
                 player2Score = game.Player2Score,
@@ -349,7 +350,8 @@ public class GameHub : Hub
         await Clients.User(game.Player2!.Id.ToString()).SendAsync("InitResultPhase",
             new
             {
-                isPlayerCorrect = isPlayer2Correct,
+                isPlayer1Correct,
+                isPlayer2Correct,
                 rewardStatements = player2rewardStatement,
                 player1Score = game.Player1Score,
                 player2Score = game.Player2Score,

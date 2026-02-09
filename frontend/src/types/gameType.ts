@@ -55,6 +55,7 @@ export interface PlayingPhaseData {
 }
 
 export interface ResultPhaseData {
-  isPlayerCorrect: boolean;
+  isPlayer1Correct: boolean;
+  isPlayer2Correct: boolean;
   rewardStatements?: RewardStatement[];
 }

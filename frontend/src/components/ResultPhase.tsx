@@ -45,10 +45,10 @@ export default function ResultPhase() {
     setReadyStateForNextGame(room.code, false)
   }
 
-  const canChooseReward =
-    resultPhaseData.isPlayerCorrect &&
-    resultPhaseData.rewardStatements &&
-    resultPhaseData.rewardStatements.length > 0;
+  const isPlayerCorrect = clientPlayerData.slot == PlayerSlot.Player1 ? resultPhaseData.isPlayer1Correct : resultPhaseData.isPlayer2Correct;
+  const canChooseReward = isPlayerCorrect
+    && resultPhaseData.rewardStatements 
+    && resultPhaseData.rewardStatements.length > 0;
 
   return (
     <div>
@@ -61,10 +61,10 @@ export default function ResultPhase() {
             score={allPlayerData.player1Score}
             isReady={allPlayerData.player1?.isReady ?? false}
             chillingImg={player1Chilling}
-            thinkingImg={resultPhaseData.isPlayerCorrect ? player1Winning : player1Losing}
+            thinkingImg={resultPhaseData.isPlayer1Correct ? player1Winning : player1Losing}
           />
           <div className="flex flex-col w-full items-center justify-center">
-            {resultPhaseData.isPlayerCorrect ? (
+            {isPlayerCorrect ? (
               <div className="flex flex-col justify-center items-center gap-y-4">
                 <h3 className="text-5xl font-bold">Right Choice!</h3>
                 {canChooseReward && (
@@ -90,7 +90,7 @@ export default function ResultPhase() {
             score={allPlayerData.player2Score}
             isReady={allPlayerData.player2?.isReady ?? false}
             chillingImg={player2Chilling}
-            thinkingImg={resultPhaseData.isPlayerCorrect ? player2Winning : player2Losing}
+            thinkingImg={resultPhaseData.isPlayer2Correct ? player2Winning : player2Losing}
             isFlipped={true}
           />
         </div>
