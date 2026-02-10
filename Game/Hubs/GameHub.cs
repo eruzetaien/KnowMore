@@ -212,11 +212,11 @@ public class GameHub : Hub
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
         if (playerSlot == PlayerSlot.Player1)
         {
-            game.Player1.IsReady = true;
+            game.Player1.IsReady = request.IsReady;
         }
         else if (playerSlot == PlayerSlot.Player2)
         {
-            game.Player2!.IsReady = true;
+            game.Player2!.IsReady = request.IsReady;
         }
         else
             throw new HubException("You are not a participant in this game");
