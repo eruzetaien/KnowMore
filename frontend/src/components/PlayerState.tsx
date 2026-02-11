@@ -2,8 +2,8 @@ type PlayerStateProps = {
   name?: string;
   score?: number | null;
   isReady: boolean;
-  chillingImg: string;
-  thinkingImg: string;
+  readyImg: string;
+  notReadyImg: string;
   isFlipped?: boolean;
 };
 
@@ -11,8 +11,8 @@ export default function PlayerState({
   name,
   score,
   isReady,
-  chillingImg,
-  thinkingImg,
+  readyImg,
+  notReadyImg,
   isFlipped = false,
 }: PlayerStateProps) {
   return (
@@ -21,7 +21,7 @@ export default function PlayerState({
     >
       <img
         className={`w-200 ${ isFlipped ? "scale-x-[-1]" : ""}`}
-        src={isReady ? chillingImg : thinkingImg}
+        src={isReady ? readyImg : notReadyImg}
         alt="Player state"
       />
       <h3 className="text-2xl mt-2">{name ?? "-"}</h3>

@@ -60,8 +60,8 @@ export default function ResultPhase() {
             name={allPlayerData.player1?.name}
             score={allPlayerData.player1Score}
             isReady={allPlayerData.player1?.isReady ?? false}
-            chillingImg={player1Chilling}
-            thinkingImg={resultPhaseData.isPlayer1Correct ? player1Winning : player1Losing}
+            readyImg={player1Chilling}
+            notReadyImg={resultPhaseData.isPlayer1Correct ? player1Winning : player1Losing}
           />
           <div className="flex flex-col w-full items-center justify-center">
             {isPlayerCorrect ? (
@@ -89,8 +89,8 @@ export default function ResultPhase() {
             name={allPlayerData.player2?.name}
             score={allPlayerData.player2Score}
             isReady={allPlayerData.player2?.isReady ?? false}
-            chillingImg={player2Chilling}
-            thinkingImg={resultPhaseData.isPlayer2Correct ? player2Winning : player2Losing}
+            readyImg={player2Chilling}
+            notReadyImg={resultPhaseData.isPlayer2Correct ? player2Winning : player2Losing}
             isFlipped={true}
           />
         </div>

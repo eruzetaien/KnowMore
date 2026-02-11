@@ -46,8 +46,8 @@ export default function PlayingPhase() {
           name={allPlayerData.player1?.name}
           score={allPlayerData.player1Score}
           isReady={allPlayerData.player1?.isReady ?? false}
-          chillingImg={player1Chilling}
-          thinkingImg={player1Thinking}
+          readyImg={player1Chilling}
+          notReadyImg={player1Thinking}
         />
         <div className="flex flex-col w-full items-center justify-center">
           <div className="w-4/5 bg-platinum rounded-3xl border-4 border-heathered-grey p-6 outline-2 -outline-offset-7 outline-heathered-grey">
@@ -78,8 +78,8 @@ export default function PlayingPhase() {
           name={allPlayerData.player2?.name}
           score={allPlayerData.player2Score}
           isReady={allPlayerData.player2?.isReady ?? false}
-          chillingImg={player2Chilling}
-          thinkingImg={player2Thinking}
+          readyImg={player2Chilling}
+          notReadyImg={player2Thinking}
           isFlipped={true}
         />
       </div>
