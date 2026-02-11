@@ -255,8 +255,8 @@ export const useGameHub = () => {
 function resetPlayerReadiness(prev: AllPlayerData) : AllPlayerData{
   return {
     ...prev,
-    player1: prev.player2
-      ? { ...prev.player2, isReady: false }
+    player1: prev.player1
+      ? { ...prev.player1, isReady: false }
       : null,
     player2: prev.player2
       ? { ...prev.player2, isReady: false }
