@@ -22,8 +22,9 @@ export default function CreateRoomModal({
   const {connect} = useGameHub();
 
   const handleCreate = () => {
-    if (!roomName.trim()) return;
-    createRoom({ name: roomName });
+    const newRoomName = roomName.trim();
+    if (!newRoomName) return;
+    createRoom({ name: newRoomName });
   };
 
     useEffect(() => {
@@ -50,7 +51,7 @@ export default function CreateRoomModal({
         <img src={modalTag} className="absolute -top-8 left-1/2 transform -translate-x-1/2"/> 
 
         <div className="flex flex-col justify-center items-center">
-          <div className="relative mb-4 inline-block w-auto shrink-0">
+          <div className={`relative mb-4 inline-block w-auto shrink-0 ${isPending ? 'opacity-50' : ''}`}>
             <img src={inputContainer} alt="input background" className="w-auto h-9" />
             <input
               type="text"
@@ -64,7 +65,7 @@ export default function CreateRoomModal({
           <button
             onClick={handleCreate}
             disabled={isPending || !roomName.trim()}
-            className="hover:scale-105 cursor-pointer"
+            className={`${isPending ? 'opacity-50' : 'hover:scale-105 cursor-pointer'}`}
           >
             <img src={createButton}/>
           </button>

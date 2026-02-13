@@ -153,7 +153,7 @@ export default function ResultPhase() {
 
                   <button
                     onClick={handleChooseReward}
-                    className={`${submitted ? "opacity-70" : "cursor-pointer hover:scale-105"}`}
+                    className={`${submitted ? "opacity-70" : "cursor-pointer hover:scale-101"}`}
                     disabled={selectedRewardId === null || submitted}
                   >
                     <img src={keepButton} alt="keep reward button" />

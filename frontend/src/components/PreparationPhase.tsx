@@ -111,9 +111,7 @@ export default function PreparationPhase() {
                     setIsFactOpen(true);
                   }
                 }}
-                className={`cursor-pointer transition-transform ${
-                  !isStatementSent ? "hover:scale-101" : "opacity-50 cursor-not-allowed"
-                }`}
+                className={`${!isStatementSent ? "hover:scale-101 cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
               >
                 <CouponCard>
                   <div style={{ opacity: selectedFacts?.[0] ? 1 : 0.5 }}>
@@ -128,9 +126,7 @@ export default function PreparationPhase() {
                     setIsFactOpen(true);
                   }
                 }}
-                className={`cursor-pointer transition-transform ${
-                  !isStatementSent ? "hover:scale-101" : "opacity-50 cursor-not-allowed"
-                }`}
+                className={`${!isStatementSent ? "hover:scale-101 cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
               >
                 <CouponCard>
                   <div style={{ opacity: selectedFacts?.[1] ? 1 : 0.5 }}>
@@ -148,7 +144,8 @@ export default function PreparationPhase() {
                     e.target.style.height = `${e.target.scrollHeight}px`;
                   }}
                   placeholder="Write your lie"
-                  className="w-full resize-none overflow-hidden bg-transparent border-0 outline-none focus:outline-none text-inherit placeholder:opacity-70"
+                  className={`w-full resize-none overflow-hidden bg-transparent border-0 outline-none focus:outline-none text-inherit placeholder:opacity-70"
+                    ${!isStatementSent ? "" : "opacity-50 cursor-not-allowed"}`}
                   disabled={isStatementSent}
                 />
               </CouponCard>
