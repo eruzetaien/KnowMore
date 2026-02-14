@@ -31,72 +31,82 @@ export default function PlayingPhase() {
     (clientPlayerData.slot == PlayerSlot.Player2 && allPlayerData.player2?.isReady);
 
   return (
-    <div className="flex flex-col justify-center items-center">
-      {/* Timer */}
-      <div className="flex flex-col justify-center items-center mt-4 mb-6 text-black">
-        <span className="text-xl -mb-2" > Timer</span>
-        <h2 className="text-5xl" >{minutes}:{seconds.toString().padStart(2, "0")}</h2>
-      </div>
-
-      <h2 className="text-5xl mb-4">Two truths hide one lie, can you uncover it?</h2>
-
-      {/* Player State */}
-      <div className="flex justify-between w-11/12">
-        <PlayerState
-          name={allPlayerData.player1?.name}
-          score={allPlayerData.player1Score}
-          isReady={allPlayerData.player1?.isReady ?? false}
-          readyImg={player1Chilling}
-          notReadyImg={player1Thinking}
-        />
-        <div className="flex flex-col w-full items-center justify-center">
-          <div className="w-4/5 bg-platinum rounded-3xl border-4 border-heathered-grey p-6 outline-2 -outline-offset-7 outline-heathered-grey">
-            <div className="flex flex-col gap-y-2">
-
-            <ul className="space-y-3 p-4">
-              {playingPhaseData.opponentStatements.map((opt) => (
-                <li key={opt.idx}>
-                  <span
-                    className={`rounded cursor-pointer transition text-xl
-                      ${
-                        selectedIdx === opt.idx ? "red-highlight" : ""
-                      } ${
-                        isAnswerSent ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                    onClick={() => !isAnswerSent && setSelectedIdx(opt.idx)}
-                  >
-                    {opt.description}
-                  </span>
-                </li>
-              ))}
-            </ul>
-
+    <div className="h-screen w-screen flex flex-col ">
+      <div className="h-full w-full grid grid-rows-8">
+        <div className="row-span-2 flex flex-col justify-between items-center pt-18">
+            {/* Timer */}
+            <div className="flex flex-col justify-center items-center text-black">
+              <span className="text-2xl -mb-2" > Timer</span>
+              <h2 className="text-6xl" >{minutes}:{seconds.toString().padStart(2, "0")}</h2>
             </div>
-          </div>
-        </div>
-        <PlayerState
-          name={allPlayerData.player2?.name}
-          score={allPlayerData.player2Score}
-          isReady={allPlayerData.player2?.isReady ?? false}
-          readyImg={player2Chilling}
-          notReadyImg={player2Thinking}
-          isFlipped={true}
-        />
-      </div>
 
-      <div className="mt-10">
-        {isAnswerSent ? (
-          <p className="text-3xl">
-            Waiting opponent's decision ...
-          </p>
-        ) : (
-          <button
-            onClick={handleSubmit}
-            className="cursor-pointer hover:scale-105"
-          >
-            <img src={sendButton} alt="send button" />
-          </button>
-        )}
+            <h2 className="text-5xl mb-4">Two truths hide one lie, can you uncover it?</h2>
+        </div>
+
+        <div className="row-span-6 flex flex-col items-center justify-between">
+          <div className="flex justify-between w-11/12">
+
+            <PlayerState
+              name={allPlayerData.player1?.name}
+              score={allPlayerData.player1Score}
+              isReady={allPlayerData.player1?.isReady ?? false}
+              readyImg={player1Chilling}
+              notReadyImg={player1Thinking}
+            />
+            
+            <div className="flex flex-col w-full items-center justify-center py-12">
+              <div className="w-4/5 bg-platinum rounded-3xl border-4 border-heathered-grey p-6 outline-2 -outline-offset-7 outline-heathered-grey">
+                <div className="flex flex-col gap-y-2">
+
+                <ul className="space-y-3 p-4">
+                  {playingPhaseData.opponentStatements.map((opt) => (
+                    <li key={opt.idx}>
+                      <span
+                        className={`rounded cursor-pointer transition text-xl
+                          ${
+                            selectedIdx === opt.idx ? "red-highlight" : ""
+                          } ${
+                            isAnswerSent ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
+                        onClick={() => !isAnswerSent && setSelectedIdx(opt.idx)}
+                      >
+                        {opt.description}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                </div>
+              </div>
+            </div>
+
+            <PlayerState
+              name={allPlayerData.player2?.name}
+              score={allPlayerData.player2Score}
+              isReady={allPlayerData.player2?.isReady ?? false}
+              readyImg={player2Chilling}
+              notReadyImg={player2Thinking}
+              isFlipped={true}
+            />
+          </div>
+
+          <div className="pb-12">
+            {isAnswerSent ? (
+              <p className="text-3xl">
+                Waiting opponent's decision ...
+              </p>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                className="cursor-pointer hover:scale-105"
+              >
+                <img src={sendButton} alt="send button" />
+              </button>
+            )}
+          </div>
+          
+        </div>
+      
       </div>
       
     </div>

@@ -83,101 +83,110 @@ export default function PreparationPhase() {
   const isTop = (card: PaperId) => order[0] === card;
 
   return (
-    <div className="flex flex-col justify-center items-center">
-      {/* Timer */}
-      <div className="flex flex-col justify-center items-center mt-4 mb-6 text-black">
-        <span className="text-xl -mb-2" > Timer</span>
-        <h2 className="text-5xl" >{minutes}:{seconds.toString().padStart(2, "0")}</h2>
-      </div>
-
-      <h2 className="text-5xl mb-4">Prepare your card to play!</h2>
-
-      {/* Player State */}
-      <div className="flex justify-between w-11/12">
-        <PlayerState
-          name={allPlayerData.player1?.name}
-          score={allPlayerData.player1Score}
-          isReady={allPlayerData.player1?.isReady ?? false}
-          readyImg={player1Chilling}
-          notReadyImg={player1Thinking}
-        />
-        <div className="flex flex-col w-full items-center justify-center">
-          <div className="w-4/5 bg-platinum rounded-3xl border-4 border-heathered-grey p-6 outline-2 -outline-offset-7 outline-heathered-grey">
-            <div className="flex flex-col gap-y-2">
-
-              <div
-                onClick={() => {
-                  if (!isStatementSent) {
-                    setIsFactOpen(true);
-                  }
-                }}
-                className={`${!isStatementSent ? "hover:scale-101 cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
-              >
-                <CouponCard>
-                  <div style={{ opacity: selectedFacts?.[0] ? 1 : 0.5 }}>
-                    {selectedFacts?.[0]?.description || "Pick your fact to play"}
-                  </div>
-                </CouponCard>
-              </div>
-
-              <div
-                onClick={() => {
-                  if (!isStatementSent) {
-                    setIsFactOpen(true);
-                  }
-                }}
-                className={`${!isStatementSent ? "hover:scale-101 cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
-              >
-                <CouponCard>
-                  <div style={{ opacity: selectedFacts?.[1] ? 1 : 0.5 }}>
-                    {selectedFacts?.[1]?.description || "Pick your fact to play"}
-                  </div>
-                </CouponCard>
-              </div>
-
-              <CouponCard color={"red"}>
-                <textarea
-                  value={lie}
-                  onChange={(e) => {
-                    setLie(e.target.value);
-                    e.target.style.height = "auto";
-                    e.target.style.height = `${e.target.scrollHeight}px`;
-                  }}
-                  placeholder="Write your lie"
-                  className={`w-full resize-none overflow-hidden bg-transparent border-0 outline-none focus:outline-none text-inherit placeholder:opacity-70"
-                    ${!isStatementSent ? "" : "opacity-50 cursor-not-allowed"}`}
-                  disabled={isStatementSent}
-                />
-              </CouponCard>
-
-              
+    <div className="h-screen w-screen flex flex-col ">
+      <div className="h-full w-full grid grid-rows-8">
+        <div className="row-span-2 flex flex-col justify-between items-center pt-18">
+            {/* Timer */}
+            <div className="flex flex-col justify-center items-center text-black">
+              <span className="text-2xl -mb-2" > Timer</span>
+              <h2 className="text-6xl" >{minutes}:{seconds.toString().padStart(2, "0")}</h2>
             </div>
-          </div>
+
+            <h2 className="text-5xl">Prepare your card to play!</h2>
         </div>
-        <PlayerState
-          name={allPlayerData.player2?.name}
-          score={allPlayerData.player2Score}
-          isReady={allPlayerData.player2?.isReady ?? false}
-          readyImg={player2Chilling}
-          notReadyImg={player2Thinking}
-          isFlipped={true}
-        />
+
+        <div className="row-span-6 flex flex-col items-center justify-between">
+          <div className="flex justify-between w-11/12">
+
+            <PlayerState
+              name={allPlayerData.player1?.name}
+              score={allPlayerData.player1Score}
+              isReady={allPlayerData.player1?.isReady ?? false}
+              readyImg={player1Chilling}
+              notReadyImg={player1Thinking}
+            />
+            
+            <div className="flex flex-col w-full items-center justify-center py-12">
+              <div className="w-5/6 bg-platinum rounded-3xl border-4 border-heathered-grey p-6 outline-2 -outline-offset-7 outline-heathered-grey">
+                <div className="flex flex-col gap-y-2">
+                  <div
+                    onClick={() => {
+                      if (!isStatementSent) {
+                        setIsFactOpen(true);
+                      }
+                    }}
+                    className={`${!isStatementSent ? "hover:scale-101 cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
+                  >
+                    <CouponCard>
+                      <div style={{ opacity: selectedFacts?.[0] ? 1 : 0.5 }}>
+                        {selectedFacts?.[0]?.description || "Pick your fact to play"}
+                      </div>
+                    </CouponCard>
+                  </div>
+
+                  <div
+                    onClick={() => {
+                      if (!isStatementSent) {
+                        setIsFactOpen(true);
+                      }
+                    }}
+                    className={`${!isStatementSent ? "hover:scale-101 cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
+                  >
+                    <CouponCard>
+                      <div style={{ opacity: selectedFacts?.[1] ? 1 : 0.5 }}>
+                        {selectedFacts?.[1]?.description || "Pick your fact to play"}
+                      </div>
+                    </CouponCard>
+                  </div>
+
+                  <CouponCard color={"red"}>
+                    <textarea
+                      value={lie}
+                      onChange={(e) => {
+                        setLie(e.target.value);
+                        e.target.style.height = "auto";
+                        e.target.style.height = `${e.target.scrollHeight}px`;
+                      }}
+                      placeholder="Write your lie"
+                      className={`w-full resize-none overflow-hidden bg-transparent border-0 outline-none focus:outline-none text-inherit placeholder:opacity-70"
+                        ${!isStatementSent ? "" : "opacity-50 cursor-not-allowed"}`}
+                      disabled={isStatementSent}
+                    />
+                  </CouponCard>
+                </div>
+              </div>
+            </div>
+
+            <PlayerState
+              name={allPlayerData.player2?.name}
+              score={allPlayerData.player2Score}
+              isReady={allPlayerData.player2?.isReady ?? false}
+              readyImg={player2Chilling}
+              notReadyImg={player2Thinking}
+              isFlipped={true}
+            />
+          </div>
+
+          <div className="pb-12">
+            {isStatementSent ? (
+              <p className="text-3xl">
+                Waiting opponent's decision ...
+              </p>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                className="cursor-pointer hover:scale-105"
+              >
+                <img src={sendButton} alt="send button" />
+              </button>
+            )}
+          </div>
+          
+        </div>
+      
       </div>
 
-      <div className="mt-10">
-        {isStatementSent ? (
-          <p className="text-3xl">
-            Waiting opponent's decision ...
-          </p>
-        ) : (
-          <button
-            onClick={handleSubmit}
-            className="cursor-pointer hover:scale-105"
-          >
-            <img src={sendButton} alt="send button" />
-          </button>
-        )}
-      </div>
+      
 
       {isFactOpen && (
         <div className="fixed inset-0 z-50 w-screen h-screen bg-black/50  backdrop-blur-xs" onClick={() => setIsFactOpen(false)}>
