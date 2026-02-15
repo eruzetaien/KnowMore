@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useGameHub } from "../context/GameHubContext";
-import { useCountdown } from "../hooks/useCountdown";
 
 import player1Thinking from "../assets/players/state/player1-thinking.png";
 import player2Thinking from "../assets/players/state/player2-thinking.png";
@@ -14,6 +13,7 @@ import sendButton from "../assets/buttons/send-button.svg";
 import PlayerState from "./PlayerState";
 import CouponCard from "./CouponCard";
 import type { FactForGame } from "../types/factType";
+import { CountdownTimer } from "./CountdownTimer";
 
 type PaperId = "table-of-content" | "content";
 
@@ -33,7 +33,7 @@ export default function PreparationPhase() {
 
   const [isStatementSent, setIsStatementSend] = useState<boolean>(false);
 
-  const { minutes, seconds } = useCountdown(180); // 3 minutes
+  const [isTimerRunning, setIsTimerRunning] = useState(true);
 
   if (hubLoading) return <p>Loading hub connection...</p>;
 
@@ -60,6 +60,7 @@ export default function PreparationPhase() {
     }
     await sendStatements(room.code, lie, selectedFacts[0].id, selectedFacts[1].id);
     setIsStatementSend(true);
+    setIsTimerRunning(false);
   };
 
   const [order, setOrder] = useState<[PaperId, PaperId]>([
@@ -86,11 +87,11 @@ export default function PreparationPhase() {
     <div className="h-screen w-screen flex flex-col ">
       <div className="h-full w-full grid grid-rows-8">
         <div className="row-span-2 flex flex-col justify-between items-center pt-18">
-            {/* Timer */}
-            <div className="flex flex-col justify-center items-center text-black">
-              <span className="text-2xl -mb-2" > Timer</span>
-              <h2 className="text-6xl" >{minutes}:{seconds.toString().padStart(2, "0")}</h2>
-            </div>
+            <CountdownTimer
+              initialSeconds={180}
+              isRunning={isTimerRunning}
+              onComplete={() => alert("Time's up!")}
+            />;
 
             <h2 className="text-5xl">Prepare your card to play!</h2>
         </div>

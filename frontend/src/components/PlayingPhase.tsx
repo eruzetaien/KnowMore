@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useGameHub } from "../context/GameHubContext";
 import { PlayerSlot } from "../types/playerType";
-import { useCountdown } from "../hooks/useCountdown";
 import PlayerState from "./PlayerState";
 
 import player1Thinking from "../assets/players/state/player1-thinking.png";
@@ -9,6 +8,7 @@ import player2Thinking from "../assets/players/state/player2-thinking.png";
 import player1Chilling from "../assets/players/state/player1-chilling.png";
 import player2Chilling from "../assets/players/state/player2-chilling.png";
 import sendButton from "../assets/buttons/send-button.svg";
+import { CountdownTimer } from "./CountdownTimer";
 
 export default function PlayingPhase() {
   const { playingPhaseData, allPlayerData, clientPlayerData, isLoading: hubLoading, room, sendAnswer } = useGameHub();
@@ -20,10 +20,11 @@ export default function PlayingPhase() {
   const handleSubmit = () => {
     if (selectedIdx !== null) {
       sendAnswer(room.code, selectedIdx);
+      setIsTimerRunning(false);
     }
   };
 
-  const { minutes, seconds } = useCountdown(180); // 3 minutes
+  const [isTimerRunning, setIsTimerRunning] = useState(true);
   
   // Determine if this player already submitted an answer
   const isAnswerSent =
@@ -34,11 +35,11 @@ export default function PlayingPhase() {
     <div className="h-screen w-screen flex flex-col ">
       <div className="h-full w-full grid grid-rows-8">
         <div className="row-span-2 flex flex-col justify-between items-center pt-18">
-            {/* Timer */}
-            <div className="flex flex-col justify-center items-center text-black">
-              <span className="text-2xl -mb-2" > Timer</span>
-              <h2 className="text-6xl" >{minutes}:{seconds.toString().padStart(2, "0")}</h2>
-            </div>
+             <CountdownTimer
+                initialSeconds={180}
+                isRunning={isTimerRunning}
+                onComplete={() => alert("Time's up!")}
+              />;
 
             <h2 className="text-5xl mb-4">Two truths hide one lie, can you uncover it?</h2>
         </div>
