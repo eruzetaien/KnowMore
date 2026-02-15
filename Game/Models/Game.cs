@@ -17,9 +17,9 @@ public class PlayerData
 public abstract class HasPlayersBase
 {
     [JsonInclude]
-    public required PlayerData Player1;
+    public required PlayerData Player1 { get; set; }
     [JsonInclude]
-    public PlayerData? Player2;
+    public PlayerData? Player2 { get; set; }
 
     public PlayerSlot GetPlayerSlot(long userId)
     {
@@ -43,7 +43,8 @@ public class Room : HasPlayersBase
 
 public class GameData : HasPlayersBase
 {
-    public required string RoomCode { get; set; }
+    public GamePhase Phase { get; set; }
+    public string RoomCode { get; set; } = string.Empty;
     public string Player1Lie { get; set; } = string.Empty;
     public string Player2Lie { get; set; } = string.Empty;
     public long[] Player1Statements { get; set; } = new long[3];

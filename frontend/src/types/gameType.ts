@@ -1,5 +1,5 @@
 import type { FactGroupForGame } from "./factType";
-import type { PlayerData } from "./playerType";
+import type { AllPlayerData, PlayerData, PlayerSlot } from "./playerType";
 
 export const GamePhase = {
   None: 0,
@@ -51,11 +51,20 @@ export interface PreparationPhaseData extends InitPreparationPhaseResponse {}
 
 export interface PlayingPhaseData {
   opponentStatements: PlayerStatement[];
-  playerAnswer: number;
 }
 
 export interface ResultPhaseData {
   isPlayer1Correct: boolean;
   isPlayer2Correct: boolean;
   rewardStatements?: RewardStatement[];
+}
+
+export interface GameDataResponse {
+  roomCode: string;
+  slot: PlayerSlot;
+  allPlayerData: AllPlayerData;
+  phase: GamePhase;
+  preparationPhaseData: PreparationPhaseData;
+  playingPhaseData: PlayingPhaseData;
+  resultPhaseData: ResultPhaseData;
 }

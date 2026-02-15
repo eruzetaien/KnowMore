@@ -44,7 +44,7 @@ public class RoomRequest
 public class JoinRoomRequest : RoomRequest {}
 
 public class KickPlayerRequest : RoomRequest {}
-
+public class ReconnectRequest : RoomRequest { }
 
 public class SetPlayerReadyStateRequest()
 {

@@ -1,13 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import * as signalR from "@microsoft/signalr";
 import type { JoinRoomResponse, RoomResponse } from "../types/roomType";
-import type { GameData, InitPlayerResponse, InitPlayingPhaseResponse, InitPreparationPhaseResponse, InitResultPhaseResponse, PlayingPhaseData, PreparationPhaseData, ResultPhaseData, SetGamePhaseResponse } from "../types/gameType";
+import type { GameData, GameDataResponse, InitPlayerResponse, InitPlayingPhaseResponse, InitPreparationPhaseResponse, InitResultPhaseResponse, PlayingPhaseData, PreparationPhaseData, ResultPhaseData, SetGamePhaseResponse } from "../types/gameType";
 import { GamePhase } from "../types/gameType";
 import { type AllPlayerData, type ClientPlayerData, type PlayerReadinessResponse} from "../types/playerType";
 import { redirectIfNotOn } from "../utils/redirect";
 
 type GameHubData = {
-  connected: boolean;
   room: RoomResponse;
   isLoading: boolean;
   clientPlayerData: ClientPlayerData;
@@ -28,10 +27,11 @@ type GameHubContextType = GameHubData & {
   sendRewardChoice: (factId: string) => Promise<void>;
   setReadyStateForNextGame: (roomCode: string, isReady: boolean) => Promise<void>;
   kickPlayer: (roomCode: string) => Promise<void>;
+  reconnect: (roomCode: string) => Promise<void>;
+  isConnected: () => boolean;
 };
 
 const gameHubDataInit = {
-  connected: false,
   room: {} as RoomResponse,
   isLoading: false,   
   clientPlayerData: {} as ClientPlayerData,
@@ -44,23 +44,27 @@ const gameHubDataInit = {
 
 const GameHubContext = createContext<GameHubContextType | undefined>(undefined);
 
-let connection: signalR.HubConnection | null = null;
-
 export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const connectionRef = useRef<signalR.HubConnection | null>(null);
   const [data, setData] = useState<GameHubData>(gameHubDataInit);
 
   const connect = useCallback(async () => {
-    if ((connection && connection.state === signalR.HubConnectionState.Connected) || data.isLoading) return;
+    if (connectionRef.current?.state === signalR.HubConnectionState.Connected || data.isLoading) return;
 
+    if (connectionRef.current){
+      connectionRef.current.stop();
+    }
     setData(prev => ({ ...prev, isLoading: true })); // start loading
 
     const hubUrl = `${import.meta.env.VITE_GAME_BASE_URL}/gamehub`;
 
-    connection = new signalR.HubConnectionBuilder()
+    const connection = new signalR.HubConnectionBuilder()
       .withUrl(hubUrl)
       .withAutomaticReconnect()
       .build();
 
+    connectionRef.current = connection; 
+      
     connection.on("ReceiveRoomUpdate", (room: RoomResponse) => {
       setData(prev => ({ ...prev, room }));
     });
@@ -99,7 +103,6 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setData(prev => ({...prev, 
         playingPhaseData: {
           opponentStatements: response.opponentStatements,
-          playerAnswer: -1,
         }
       }));
     });
@@ -138,17 +141,50 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }))
     });
 
+    connection.on("LoadGameData", (response: GameDataResponse) => {
+      setData(prev => {
+        const updatedData = {
+          ...prev,
+          room: { ...prev.room, code: response.roomCode },
+          game: { ...prev.game, phase: response.phase },
+          clientPlayerData: { ...prev.clientPlayerData, slot: response.slot },
+          allPlayerData: response.allPlayerData,
+          preparationPhaseData: prev.preparationPhaseData,
+          playingPhaseData: prev.playingPhaseData,
+          resultPhaseData: prev.resultPhaseData,
+        };
+
+        // set the correct phaseData based on response.phase
+        switch (response.phase) {
+          case GamePhase.Preparation:
+            updatedData.preparationPhaseData = response.preparationPhaseData;
+            break;
+          case GamePhase.Playing:
+            updatedData.playingPhaseData = response.playingPhaseData;
+            break;
+          case GamePhase.Result:
+            updatedData.resultPhaseData = response.resultPhaseData;
+            break;
+        }
+        
+        return updatedData;
+      });
+
+    });
+
     connection.on("Disconnect", async () => {
       clientDisconnect();
       redirectIfNotOn("/lobby");
     });
 
     await connection.start();
-    setData(prev => ({ ...prev, connected: true, isLoading: false })); // stop loading
-  }, [data.isLoading]);
+    setData(prev => ({ ...prev, isLoading: false })); // stop loading
+
+  }, []);
 
   const invokeWithConnection = useCallback(
     async (method: string, ...args: any[]) => {
+      const connection = connectionRef.current;
       if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
         return;
       }
@@ -201,6 +237,15 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [invokeWithConnection]
   );
 
+  const reconnect = useCallback(
+    async (roomCode: string) => {
+      await connect();
+      await connect();
+      await invokeWithConnection("Reconnect", {roomCode} );
+    },
+    [invokeWithConnection]
+  );
+
   const kickPlayer = useCallback(
     async (roomCode: string) => {
       await invokeWithConnection("KickPlayer", {roomCode});
@@ -216,12 +261,16 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 
   const clientDisconnect = useCallback(async () => {
-    if (connection) {
+    if (connectionRef.current) {
       setData(prev => ({ ...prev, isLoading: true })); // start loading
-      await connection.stop();
-      connection = null;
+      await connectionRef.current.stop();
+      connectionRef.current = null;
       setData(gameHubDataInit); // stop loading
     }
+  }, []);
+
+  const isConnected = useCallback(() => {
+    return connectionRef.current?.state === signalR.HubConnectionState.Connected;
   }, []);
 
   useEffect(() => {
@@ -238,7 +287,9 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
         sendAnswer, 
         sendRewardChoice, 
         setReadyStateForNextGame,
-        kickPlayer }}
+        kickPlayer,
+        reconnect,
+        isConnected}}
     >
       {children}
     </GameHubContext.Provider>

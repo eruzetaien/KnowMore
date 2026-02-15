@@ -11,21 +11,22 @@ import { PlayerSlot } from "../types/playerType";
 
 function RoomPage() {
   const { roomCode } = useParams();
-  const { connected, room, allPlayerData, clientPlayerData, isLoading, 
-    disconnect, joinRoom, setReadyStateToStartGame, kickPlayer } = useGameHub();
+  const { room, allPlayerData, clientPlayerData, isLoading, 
+    disconnect, joinRoom, setReadyStateToStartGame, kickPlayer, isConnected } = useGameHub();
 
   const [ready, setReady] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (connected && roomCode) {
+    if (isConnected() && roomCode) {
       joinRoom(roomCode);
+      return;
     }
 
-    if (!connected){
+    if (!isConnected()){
       navigate("/lobby");
     }
-  }, [roomCode, connected]);
+  }, [roomCode, isConnected]);
 
   const handleReadyClick = () => {
     const newState = !ready;
@@ -33,10 +34,10 @@ function RoomPage() {
     setReadyStateToStartGame(room.code, newState); // if GameHub provides ready state update
   };
 
+  if (isLoading) return <p>Connecting to game hub...</p>;
+
   if (allPlayerData.player1?.isReady && allPlayerData.player2?.isReady) 
     navigate(`/game/${roomCode}`);
-
-  if (isLoading) return <p>Connecting to game hub...</p>;
 
   return (
     <div className="flex flex-col items-center justify-between p-12">

@@ -77,7 +77,7 @@ public class GameHub : Hub
             room.Player2,
         });
     }
-    
+
     public async Task SetReadyStateToStartGame(SetPlayerReadyStateRequest request)
     {
         long userId = GetUserId();
@@ -100,9 +100,9 @@ public class GameHub : Hub
         room.HasGameStarted = isPlayer1Ready && isPlayer2Ready;
 
         await _redisService.UpdateAsync<Room>(roomKey, room);
-        
+
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
-                new { IsPlayer1Ready=isPlayer1Ready, IsPlayer2Ready=isPlayer2Ready});
+                new { IsPlayer1Ready = isPlayer1Ready, IsPlayer2Ready = isPlayer2Ready });
 
         if (room.HasGameStarted)
         {
@@ -117,7 +117,7 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
-        GameData game = await _redisService.GetAsync<GameData>(gameKey) ?? throw new HubException($"Game Data not found");;
+        GameData game = await _redisService.GetAsync<GameData>(gameKey) ?? throw new HubException($"Game Data not found");
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
 
         await Clients.Group(request.RoomCode).SendAsync("ReceiveEmoticon",
@@ -130,9 +130,9 @@ public class GameHub : Hub
 
         long factId1 = long.Parse(request.FactId1);
         long factId2 = long.Parse(request.FactId2);
-        
+
         string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
-        GameData game = await _redisService.GetAsync<GameData>(gameKey) ?? throw new HubException($"Game Data not found");;
+        GameData game = await _redisService.GetAsync<GameData>(gameKey) ?? throw new HubException($"Game Data not found");
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
         if (playerSlot == PlayerSlot.Player1)
         {
@@ -148,11 +148,11 @@ public class GameHub : Hub
         }
         else
             throw new HubException("You are not a participant in this game");
-           
+
         await _redisService.UpdateAsync<GameData>(gameKey, game);
-        
+
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
-                new { IsPlayer1Ready=game.Player1.IsReady, IsPlayer2Ready=game.Player2!.IsReady });
+                new { IsPlayer1Ready = game.Player1.IsReady, IsPlayer2Ready = game.Player2!.IsReady });
 
         if (game.Player1.IsReady && game.Player2!.IsReady)
             await InitPlayingPhase(game, gameKey);
@@ -163,7 +163,7 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
-        GameData game = await _redisService.GetAsync<GameData>(gameKey) ?? throw new HubException($"Game Data not found");;
+        GameData game = await _redisService.GetAsync<GameData>(gameKey) ?? throw new HubException($"Game Data not found"); ;
         PlayerSlot playerSlot = game.GetPlayerSlot(userId);
         if (playerSlot == PlayerSlot.Player1)
         {
@@ -181,12 +181,12 @@ public class GameHub : Hub
         await _redisService.UpdateAsync<GameData>(gameKey, game);
 
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
-                new { IsPlayer1Ready=game.Player1.IsReady, IsPlayer2Ready=game.Player2!.IsReady });
+                new { IsPlayer1Ready = game.Player1.IsReady, IsPlayer2Ready = game.Player2!.IsReady });
 
         if (game.Player1.IsReady && game.Player2!.IsReady)
             await InitResultPhase(game, gameKey);
     }
-    
+
     public async Task SendRewardChoice(SendRewardChoiceRequest request)
     {
         long userId = GetUserId();
@@ -224,53 +224,53 @@ public class GameHub : Hub
         await _redisService.UpdateAsync<GameData>(gameKey, game);
 
         await Clients.Group(request.RoomCode).SendAsync("ReceivePlayerReadiness",
-                new { IsPlayer1Ready=game.Player1.IsReady, IsPlayer2Ready=game.Player2!.IsReady });
+                new { IsPlayer1Ready = game.Player1.IsReady, IsPlayer2Ready = game.Player2!.IsReady });
 
         if (game.Player1.IsReady && game.Player2!.IsReady)
             await InitPreparationPhase(game, gameKey);
     }
-    
+
     private async Task<GameData> CreateGameData(Room room, string roomKey)
     {
         string gameKey = $"{RedisConstant.GamePrefix}{room.Code}";
         GameData game = new()
         {
+            Phase = GamePhase.Preparation,
             RoomCode = room.Code,
             Player1 = room.Player1,
             Player2 = room.Player2,
         };
-        string gameJson = JsonSerializer.Serialize(game);
 
         int ttlInMinutes = 30;
-        await _redisService.SetAsync(gameKey, gameJson, TimeSpan.FromMinutes(ttlInMinutes));
+        await _redisService.SetAsync(gameKey, game, TimeSpan.FromMinutes(ttlInMinutes));
         await _redisService.DeleteAsync(roomKey);
 
         return game;
     }
 
     private async Task InitPreparationPhase(GameData game, string gameKey)
-    { 
+    {
         game.Player1.IsReady = game.Player2!.IsReady = false;
 
         if (game.Player1Facts.Count <= 0)
-        { 
+        {
             game.Player1Facts = await GetAllPlayerFact(game.Player1.Id);
             foreach (FactDTO fact in game.Player1Facts.SelectMany(g => g.Facts))
                 game.PlayerFactDescriptionMap.Add(long.Parse(fact.Id), fact.Description);
         }
 
         if (game.Player2Facts.Count <= 0)
-        { 
-            game.Player2Facts = game.Player2 != null ? await GetAllPlayerFact(game.Player2.Id) : [] ;
+        {
+            game.Player2Facts = game.Player2 != null ? await GetAllPlayerFact(game.Player2.Id) : [];
             foreach (FactDTO fact in game.Player2Facts.SelectMany(g => g.Facts))
                 game.PlayerFactDescriptionMap.Add(long.Parse(fact.Id), fact.Description);
         }
-
+        game.Phase = GamePhase.Preparation;
         await _redisService.UpdateAsync<GameData>(gameKey, game);
 
         await Clients.User(game.Player1.Id.ToString()).SendAsync("InitPreparationPhase",
             new { playerFacts = game.Player1Facts });
-        
+
         await Clients.User(game.Player2!.Id.ToString()).SendAsync("InitPreparationPhase",
             new { playerFacts = game.Player2Facts });
 
@@ -281,6 +281,7 @@ public class GameHub : Hub
     private async Task InitPlayingPhase(GameData game, string gameKey)
     {
         game.Player1.IsReady = game.Player2!.IsReady = false;
+        game.Phase = GamePhase.Playing;
         await _redisService.UpdateAsync<GameData>(gameKey, game);
 
         var player1Statements = new List<Object>();
@@ -318,7 +319,7 @@ public class GameHub : Hub
     }
 
     private async Task InitResultPhase(GameData game, string gameKey)
-    { 
+    {
         game.Player1.IsReady = game.Player2!.IsReady = false;
 
         // Assess player answer
@@ -328,6 +329,7 @@ public class GameHub : Hub
         game.Player1Score += isPlayer1Correct ? 1 : 0;
         game.Player2Score += isPlayer2Correct ? 1 : 0;
 
+        game.Phase = GamePhase.Result;
         await _redisService.UpdateAsync<GameData>(gameKey, game);
 
         var player1rewardStatement = isPlayer1Correct
@@ -413,7 +415,7 @@ public class GameHub : Hub
 
         if (room.GetPlayerSlot(userId) != PlayerSlot.Player1)
             return;
-            
+
         await _redisService.DeleteAsync($"{RedisConstant.UserRoomPrefix}{room.Player2!.Id}");
 
         string player2Id = room.Player2!.Id.ToString();
@@ -457,5 +459,130 @@ public class GameHub : Hub
         await _redisService.DeleteAsync(roomKey);
         await Clients.Group(roomCode).SendAsync("Disconnect");
     }
-    
+
+    public async Task Reconnect(ReconnectRequest request)
+    {
+        long userId = GetUserId();
+
+        string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
+        GameData gameData = await _redisService.GetAsync<GameData>(gameKey) ?? throw new HubException($"Game Data not found"); ;
+
+        PlayerSlot playerSlot = PlayerSlot.None;
+        PlayerData player1Data = gameData.Player1; 
+        PlayerData? player2Data = gameData.Player2;
+
+        if (gameData.Player1.Id == userId)
+        {
+            playerSlot = PlayerSlot.Player1;
+        }
+        else if (gameData.Player2?.Id == userId)
+        {
+            playerSlot = PlayerSlot.Player2;
+        }
+
+        if (playerSlot == PlayerSlot.None)
+        {
+            await Clients.Caller.SendAsync("Disconnect");
+            return;
+        }
+        await Groups.AddToGroupAsync(Context.ConnectionId, request.RoomCode);
+
+        if (gameData.Phase == GamePhase.Preparation)
+        { 
+            await Clients.Caller.SendAsync("LoadGameData",
+                new
+                {
+                    RoomCode = gameData.RoomCode,
+                    Slot = playerSlot,
+                    AllPlayerData = new
+                    {
+                        player1 = player1Data,
+                        player2 = player2Data,
+                        player1Score = gameData.Player1Score,
+                        player2Score = gameData.Player2Score,
+                    },
+                    phase = gameData.Phase,
+                    preparationPhaseData = new { PlayerFacts = playerSlot == PlayerSlot.Player1 ? gameData.Player1Facts : gameData.Player2Facts },
+                }
+            );
+        } else if (gameData.Phase == GamePhase.Playing) 
+        {
+            var opponentStatements = playerSlot == PlayerSlot.Player1 ? gameData.Player2Statements : gameData.Player1Statements;
+            var opponentStatementsWithIdx = new List<Object>();
+
+            for (int i = 0; i < opponentStatements.Length; i++)
+            {
+                long id = opponentStatements[i];
+                string desc;
+                if (id == 0)
+                    desc = playerSlot == PlayerSlot.Player1 ? gameData.Player2Lie : gameData.Player1Lie;
+                else
+                    desc = gameData.PlayerFactDescriptionMap[id];
+                opponentStatementsWithIdx.Add(new { idx = i, description = desc });
+            }
+
+            await Clients.Caller.SendAsync("LoadGameData",
+                new
+                {
+                    RoomCode = gameData.RoomCode,
+                    Slot = playerSlot,
+                    AllPlayerData = new
+                    {
+                        player1 = player1Data,
+                        player2 = player2Data,
+                        player1Score = gameData.Player1Score,
+                        player2Score = gameData.Player2Score,
+                    },
+                    phase = gameData.Phase,
+                    playingPhaseData = new { opponentStatements = opponentStatementsWithIdx }
+                }
+            );
+        } 
+        else
+        {
+            bool isPlayer1Correct = gameData.Player2Statements[gameData.Player1Answer] == 0;
+            bool isPlayer2Correct = gameData.Player1Statements[gameData.Player2Answer] == 0;
+
+            var rewardStatements = new List<object>();
+            if (playerSlot == PlayerSlot.Player1)
+            {
+                rewardStatements = isPlayer1Correct
+                    ? await GetRewardStatements(gameData.Player2Statements, gameData.Player1.Id)
+                    : [];
+            } else
+            {
+                rewardStatements = isPlayer2Correct
+                    ? await GetRewardStatements(gameData.Player1Statements, gameData.Player2!.Id)
+                    : [];
+            }
+
+            await Clients.Caller.SendAsync("LoadGameData",
+                new
+                {
+                    roomCode = gameData.RoomCode,
+                    slot = playerSlot,
+                    allPlayerData = new
+                    {
+                        player1 = player1Data,
+                        player2 = player2Data,
+                        player1Score = gameData.Player1Score,
+                        player2Score = gameData.Player2Score,
+                    },
+                    phase = gameData.Phase,
+                    resultPhaseData = new
+                    {
+                        isPlayer1Correct,
+                        isPlayer2Correct,
+                        rewardStatements = rewardStatements,
+                        player1Score = gameData.Player1Score,
+                        player2Score = gameData.Player2Score,
+                    }
+                }
+            );
+        }
+
+
+
+    }
+
 }
