@@ -374,7 +374,7 @@ public class GameHub : Hub
     {
         List<FactGroup> factGroups = await _db.FactGroups
                 .Include(g => g.Facts)
-                .Where(g => g.UserId == userId)
+                .Where(g => g.UserId == userId && g.Facts.Any())
                 .ToListAsync();
 
         return factGroups.Select(g => new FactGroupDTO(g)).ToList();
