@@ -1,5 +1,5 @@
 // GamePage.tsx
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import PlayingPhase from "../components/PlayingPhase";
 import PreparationPhase from "../components/PreparationPhase";
 import ResultPhase from "../components/ResultPhase";
@@ -9,24 +9,33 @@ import { useNavigate, useParams } from "react-router-dom";
 
 function GamePage() {
   const { roomCode } = useParams();
-  const { game, isLoading, isConnected, reconnect} = useGameHub();
+  const { game, isLoading, isConnected, reconnect, connect} = useGameHub();
   const navigate = useNavigate();
   
-  const [triedReconnect, setTriedReconnect] = useState(false);
-
   useEffect(() => {
-    if (!isConnected() && roomCode && !triedReconnect) {
-      (async () => {
-        await reconnect(roomCode);
-        setTriedReconnect(true);
-        })();
-        return;
+    let mounted = true; 
+
+    const init = async () => {
+      if (!isConnected()){
+        await connect();
       }
 
-    if (!isConnected()) {
-      navigate("/lobby");
-    }
-  }, [roomCode, triedReconnect, navigate, reconnect, isConnected]);
+      if (!mounted) return;
+
+      if (isConnected() && roomCode) {
+        await reconnect(roomCode);
+      } else {
+        navigate("/lobby");
+      }
+      
+    };
+
+    init();
+
+    return () => {
+      mounted = false;
+    };
+  }, [roomCode]);
 
   if (isLoading) return <p>Connecting...</p>;
 

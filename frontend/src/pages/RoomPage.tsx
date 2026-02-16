@@ -12,21 +12,34 @@ import { PlayerSlot } from "../types/playerType";
 function RoomPage() {
   const { roomCode } = useParams();
   const { room, allPlayerData, clientPlayerData, isLoading, 
-    disconnect, joinRoom, setReadyStateToStartGame, kickPlayer, isConnected } = useGameHub();
+    disconnect, joinRoom, setReadyStateToStartGame, kickPlayer, isConnected, connect } = useGameHub();
 
   const [ready, setReady] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isConnected() && roomCode) {
-      joinRoom(roomCode);
-      return;
-    }
+    let mounted = true; 
 
-    if (!isConnected()){
-      navigate("/lobby");
-    }
-  }, [roomCode, isConnected]);
+    const init = async () => {
+      if (!isConnected()) {
+        await connect();
+      }
+
+      if (!mounted) return;
+
+      if (isConnected() && roomCode) {
+        await joinRoom(roomCode);
+      } else {
+        navigate("/lobby");
+      }
+    };
+
+    init();
+
+    return () => {
+      mounted = false;
+    };
+  }, [roomCode]);
 
   const handleReadyClick = () => {
     const newState = !ready;

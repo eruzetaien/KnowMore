@@ -6,7 +6,7 @@ import { PlayerSlot } from "../types/playerType";
 import player1Losing from "../assets/players/state/player1-losing.png";
 import player2Losing from "../assets/players/state/player2-losing.png";
 import player1Winning from "../assets/players/state/player1-winning.png";
-import player2Winning from "../assets/players/state/player2-losing.png";
+import player2Winning from "../assets/players/state/player2-winning.png";
 import player1Chilling from "../assets/players/state/player1-chilling.png";
 import player2Chilling from "../assets/players/state/player2-chilling.png";
 import nextGameButton from "../assets/buttons/next-game-button.svg";

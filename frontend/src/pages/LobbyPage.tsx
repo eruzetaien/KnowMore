@@ -7,19 +7,16 @@ import addButton from "../assets/buttons/add-button.svg";
 import codeButton from "../assets/buttons/code-button.svg";
 import joinButton from "../assets/buttons/join-button.svg";
 import refreshButton from "../assets/buttons/refresh-button.svg";
-import { useGameHub } from "../context/GameHubContext";
 
 function LobbyPage() {
   const navigate = useNavigate();
   const { data: roomsResponse, isLoading, isError, error, refetch } = useAllRoomsQuery();
   const rooms = roomsResponse?.data;
   const { data: playerRoomResponse } = usePlayerRoomQuery();
-  const {connect} = useGameHub();
 
   const [showCreate, setShowCreate] = useState(false);
 
   const joinRoom = async (joinCode : string) => {
-    await connect();
     navigate(`/room/${joinCode}`)
   }
 

@@ -70,7 +70,6 @@ function FactPage() {
     if (!newFact.trim() || !activeGroup) 
       return;
 
-    console.log(activeGroup);
     createFact({ factGroupId : activeGroup.id, description: newFact });
   };
 

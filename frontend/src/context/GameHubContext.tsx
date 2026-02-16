@@ -49,11 +49,15 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [data, setData] = useState<GameHubData>(gameHubDataInit);
 
   const connect = useCallback(async () => {
-    if (connectionRef.current?.state === signalR.HubConnectionState.Connected || data.isLoading) return;
-
-    if (connectionRef.current){
-      connectionRef.current.stop();
+    if (
+      connectionRef.current &&
+      (connectionRef.current.state === signalR.HubConnectionState.Connected ||
+      connectionRef.current.state === signalR.HubConnectionState.Connecting ||
+      connectionRef.current.state === signalR.HubConnectionState.Reconnecting )
+    ) {
+      return;
     }
+
     setData(prev => ({ ...prev, isLoading: true })); // start loading
 
     const hubUrl = `${import.meta.env.VITE_GAME_BASE_URL}/gamehub`;
@@ -63,7 +67,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       .withAutomaticReconnect()
       .build();
 
-    connectionRef.current = connection; 
+    connectionRef.current = connection;
       
     connection.on("ReceiveRoomUpdate", (room: RoomResponse) => {
       setData(prev => ({ ...prev, room }));
@@ -166,7 +170,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
             updatedData.resultPhaseData = response.resultPhaseData;
             break;
         }
-        
+
         return updatedData;
       });
 
@@ -177,8 +181,13 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       redirectIfNotOn("/lobby");
     });
 
-    await connection.start();
-    setData(prev => ({ ...prev, isLoading: false })); // stop loading
+    try { 
+      await connection.start(); 
+    } catch (err) { 
+      console.error("SignalR connection failed:", err); 
+    } finally { 
+      setData(prev => ({ ...prev, isLoading: false })); 
+    }
 
   }, []);
 
@@ -188,10 +197,10 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
         return;
       }
-
-      await connection.invoke(method, ...args);
-      },
       
+      await connection.invoke(method, ...args);
+    },
+
     [connect]
   );
 
@@ -239,8 +248,6 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const reconnect = useCallback(
     async (roomCode: string) => {
-      await connect();
-      await connect();
       await invokeWithConnection("Reconnect", {roomCode} );
     },
     [invokeWithConnection]
@@ -272,6 +279,15 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const isConnected = useCallback(() => {
     return connectionRef.current?.state === signalR.HubConnectionState.Connected;
   }, []);
+
+  useEffect(() => {
+    return () => {
+        if (connectionRef.current) {
+        connectionRef.current.stop();
+        connectionRef.current = null;
+      }
+    };
+  }, [connect]);
 
   useEffect(() => {
     return () => {
