@@ -32,7 +32,7 @@ export default function ResultPhase() {
 
   const handleChooseReward = () => {
     if (selectedRewardId !== null) {
-      sendRewardChoice(selectedRewardId);
+      sendRewardChoice(room.code, selectedRewardId);
       setSubmitted(true);
     }
   };
@@ -47,6 +47,7 @@ export default function ResultPhase() {
 
   const isPlayerCorrect = clientPlayerData.slot == PlayerSlot.Player1 ? resultPhaseData.isPlayer1Correct : resultPhaseData.isPlayer2Correct;
   const canChooseReward = isPlayerCorrect
+    && !resultPhaseData.playerReward
     && resultPhaseData.rewardStatements 
     && resultPhaseData.rewardStatements.length > 0;
 

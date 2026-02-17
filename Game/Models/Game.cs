@@ -49,10 +49,12 @@ public class GameData : HasPlayersBase
     public string Player2Lie { get; set; } = string.Empty;
     public long[] Player1Statements { get; set; } = new long[3];
     public long[] Player2Statements { get; set; } = new long[3];
-    public int Player1Answer { get; set; }
-    public int Player2Answer { get; set; }
+    public int? Player1Answer { get; set; }
+    public int? Player2Answer { get; set; }
     public int Player1Score { get; set; }
     public int Player2Score { get; set; }
+    public string? Player1Reward { get; set; }
+    public string? Player2Reward { get; set; }
     public List<FactGroupDTO> Player1Facts { get; set; } = [];
     public List<FactGroupDTO> Player2Facts { get; set; } = [];
     public Dictionary<long, string> PlayerFactDescriptionMap { get; set; } = [];

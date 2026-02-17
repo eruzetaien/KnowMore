@@ -32,9 +32,12 @@ export interface InitPreparationPhaseResponse {
 export interface InitPlayingPhaseResponse {
   opponentStatements: PlayerStatement[];
 }
-export interface InitResultPhaseResponse extends ResultPhaseData {
+export interface InitResultPhaseResponse {
   player1Score : number;
   player2Score : number;
+  isPlayer1Correct: boolean;
+  isPlayer2Correct: boolean;
+  rewardStatements?: RewardStatement[];
 }
 
 
@@ -47,16 +50,21 @@ export interface GameData {
   phase: GamePhase;
 }
 
-export interface PreparationPhaseData extends InitPreparationPhaseResponse {}
+export interface PreparationPhaseData extends InitPreparationPhaseResponse {
+  fact1Id?: string;
+  fact2Id?: string;
+  lie?: string;
+}
 
-export interface PlayingPhaseData {
-  opponentStatements: PlayerStatement[];
+export interface PlayingPhaseData extends InitPlayingPhaseResponse {
+  playerAnswer?: number;
 }
 
 export interface ResultPhaseData {
   isPlayer1Correct: boolean;
   isPlayer2Correct: boolean;
   rewardStatements?: RewardStatement[];
+  playerReward?: string;
 }
 
 export interface GameDataResponse {

@@ -191,6 +191,19 @@ public class GameHub : Hub
     {
         long userId = GetUserId();
 
+        string gameKey = $"{RedisConstant.GamePrefix}{request.RoomCode}";
+        GameData game = await _redisService.GetAsync<GameData>(gameKey) ?? throw new HubException($"Game Data not found");
+
+        // Only for debug, in prod make sure do this after shared fact created
+        if (userId == game.Player1.Id)
+        {
+            game.Player1Reward = request.FactId; 
+        } else
+        {
+            game.Player2Reward = request.FactId;
+        }
+        await _redisService.UpdateAsync<GameData>(gameKey, game);
+
         long factId = long.Parse(request.FactId);
         bool exists = await _db.SharedFacts
                 .AnyAsync(sf => sf.FactId == factId && sf.UserId == userId);
@@ -265,6 +278,8 @@ public class GameHub : Hub
             foreach (FactDTO fact in game.Player2Facts.SelectMany(g => g.Facts))
                 game.PlayerFactDescriptionMap.Add(long.Parse(fact.Id), fact.Description);
         }
+        game.Player1Statements = [];
+        game.Player2Statements = [];
         game.Phase = GamePhase.Preparation;
         await _redisService.UpdateAsync<GameData>(gameKey, game);
 
@@ -281,6 +296,8 @@ public class GameHub : Hub
     private async Task InitPlayingPhase(GameData game, string gameKey)
     {
         game.Player1.IsReady = game.Player2!.IsReady = false;
+        game.Player1Answer = null;
+        game.Player2Answer = null;
         game.Phase = GamePhase.Playing;
         await _redisService.UpdateAsync<GameData>(gameKey, game);
 
@@ -323,8 +340,8 @@ public class GameHub : Hub
         game.Player1.IsReady = game.Player2!.IsReady = false;
 
         // Assess player answer
-        bool isPlayer1Correct = game.Player2Statements[game.Player1Answer] == 0;
-        bool isPlayer2Correct = game.Player1Statements[game.Player2Answer] == 0;
+        bool isPlayer1Correct = game.Player1Answer.HasValue && game.Player1Statements[game.Player1Answer.Value] == 0;
+        bool isPlayer2Correct = game.Player2Answer.HasValue && game.Player2Statements[game.Player2Answer.Value] == 0;
 
         game.Player1Score += isPlayer1Correct ? 1 : 0;
         game.Player2Score += isPlayer2Correct ? 1 : 0;
@@ -487,8 +504,27 @@ public class GameHub : Hub
         }
         await Groups.AddToGroupAsync(Context.ConnectionId, request.RoomCode);
 
+        bool isPlayer1 = playerSlot == PlayerSlot.Player1;
+
         if (gameData.Phase == GamePhase.Preparation)
-        { 
+        {
+            IList<long> playerStatements = isPlayer1 ? gameData.Player1Statements : gameData.Player2Statements;
+            string? fact1Id = null;
+            string? fact2Id = null;
+            if (playerStatements.Any())
+            {
+                IList<string> playerStatementsStr = playerStatements
+                    .Where(x => x != 0) // exclude lie
+                    .Select(x => x.ToString())
+                    .ToList();
+
+                if (playerStatementsStr.Count() >= 2)
+                {
+                    fact1Id = playerStatementsStr[0];
+                    fact2Id = playerStatementsStr[1];
+                }
+            }
+
             await Clients.Caller.SendAsync("LoadGameData",
                 new
                 {
@@ -496,13 +532,18 @@ public class GameHub : Hub
                     Slot = playerSlot,
                     AllPlayerData = new
                     {
-                        player1 = player1Data,
-                        player2 = player2Data,
-                        player1Score = gameData.Player1Score,
-                        player2Score = gameData.Player2Score,
+                        Player1 = player1Data,
+                        Player2 = player2Data,
+                        Player1Score = gameData.Player1Score,
+                        Player2Score = gameData.Player2Score,
                     },
-                    phase = gameData.Phase,
-                    preparationPhaseData = new { PlayerFacts = playerSlot == PlayerSlot.Player1 ? gameData.Player1Facts : gameData.Player2Facts },
+                    Phase = gameData.Phase,
+                    PreparationPhaseData = new { 
+                        PlayerFacts = isPlayer1 ? gameData.Player1Facts : gameData.Player2Facts,
+                        Fact1Id = fact1Id,
+                        Fact2Id = fact2Id,
+                        Lie = isPlayer1 ? gameData.Player1Lie : gameData.Player2Lie
+                    },
                 }
             );
         } else if (gameData.Phase == GamePhase.Playing) 
@@ -528,23 +569,26 @@ public class GameHub : Hub
                     Slot = playerSlot,
                     AllPlayerData = new
                     {
-                        player1 = player1Data,
-                        player2 = player2Data,
-                        player1Score = gameData.Player1Score,
-                        player2Score = gameData.Player2Score,
+                        Player1 = player1Data,
+                        Player2 = player2Data,
+                        Player1Score = gameData.Player1Score,
+                        Player2Score = gameData.Player2Score,
                     },
-                    phase = gameData.Phase,
-                    playingPhaseData = new { opponentStatements = opponentStatementsWithIdx }
+                    Phase = gameData.Phase,
+                    PlayingPhaseData = new { 
+                        OpponentStatements = opponentStatementsWithIdx,
+                        PlayerAnswer = isPlayer1 ? gameData.Player1Answer : gameData.Player2Answer,
+                    }
                 }
             );
         } 
         else
         {
-            bool isPlayer1Correct = gameData.Player2Statements[gameData.Player1Answer] == 0;
-            bool isPlayer2Correct = gameData.Player1Statements[gameData.Player2Answer] == 0;
+            bool isPlayer1Correct = gameData.Player1Answer.HasValue && gameData.Player1Statements[gameData.Player1Answer.Value] == 0;
+            bool isPlayer2Correct = gameData.Player2Answer.HasValue && gameData.Player2Statements[gameData.Player2Answer.Value] == 0;
 
             var rewardStatements = new List<object>();
-            if (playerSlot == PlayerSlot.Player1)
+            if (isPlayer1)
             {
                 rewardStatements = isPlayer1Correct
                     ? await GetRewardStatements(gameData.Player2Statements, gameData.Player1.Id)
@@ -559,23 +603,24 @@ public class GameHub : Hub
             await Clients.Caller.SendAsync("LoadGameData",
                 new
                 {
-                    roomCode = gameData.RoomCode,
-                    slot = playerSlot,
-                    allPlayerData = new
+                    RoomCode = gameData.RoomCode,
+                    Slot = playerSlot,
+                    AllPlayerData = new
                     {
-                        player1 = player1Data,
-                        player2 = player2Data,
-                        player1Score = gameData.Player1Score,
-                        player2Score = gameData.Player2Score,
+                        Player1 = player1Data,
+                        Player2 = player2Data,
+                        Player1Score = gameData.Player1Score,
+                        Player2Score = gameData.Player2Score,
                     },
-                    phase = gameData.Phase,
-                    resultPhaseData = new
+                    Phase = gameData.Phase,
+                    ResultPhaseData = new
                     {
-                        isPlayer1Correct,
-                        isPlayer2Correct,
-                        rewardStatements = rewardStatements,
-                        player1Score = gameData.Player1Score,
-                        player2Score = gameData.Player2Score,
+                        IsPlayer1Correct = isPlayer1Correct,
+                        IsPlayer2Correct = isPlayer2Correct,
+                        RewardStatements = rewardStatements,
+                        Player1Score = gameData.Player1Score,
+                        Player2Score = gameData.Player2Score,
+                        PlayerReward = isPlayer1 ? gameData.Player1Reward : gameData.Player2Reward,
                     }
                 }
             );

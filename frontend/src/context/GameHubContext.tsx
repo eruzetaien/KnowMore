@@ -24,7 +24,7 @@ type GameHubContextType = GameHubData & {
   setReadyStateToStartGame: (roomCode: string, isReady: boolean) => Promise<void>;
   sendStatements: (roomCode: string, lie: string, factId1: string, factId2: string) => Promise<void>;
   sendAnswer:  (roomCode: string, answerIdx: number) => Promise<void>;
-  sendRewardChoice: (factId: string) => Promise<void>;
+  sendRewardChoice: (roomCode: string, factId: string) => Promise<void>;
   setReadyStateForNextGame: (roomCode: string, isReady: boolean) => Promise<void>;
   kickPlayer: (roomCode: string) => Promise<void>;
   reconnect: (roomCode: string) => Promise<void>;
@@ -99,7 +99,12 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     connection.on("InitPreparationPhase", (response: InitPreparationPhaseResponse) => {
       setData(prev => ({...prev,
-        preparationPhaseData : response
+        preparationPhaseData : {
+          playerFacts: response.playerFacts,
+          fact1Id: undefined,
+          fact2Id: undefined,
+          lie:undefined
+        }
       }));
     });
 
@@ -107,16 +112,18 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setData(prev => ({...prev, 
         playingPhaseData: {
           opponentStatements: response.opponentStatements,
+          playerAnswer:undefined
         }
       }));
     });
 
     connection.on("InitResultPhase", (response: InitResultPhaseResponse) => {
       setData(prev => ({ ...prev,
-        resultPhaseData: { 
+        resultPhaseData: {
           isPlayer1Correct : response.isPlayer1Correct,
           isPlayer2Correct : response.isPlayer2Correct,
-          rewardStatements : response.rewardStatements
+          rewardStatements : response.rewardStatements,
+          playerReward: undefined
         },
         allPlayerData: {...prev.allPlayerData, 
           player1Score : response.player1Score, player2Score: response.player2Score
@@ -197,8 +204,11 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
         return;
       }
-      
-      await connection.invoke(method, ...args);
+      try {
+        await connection.invoke(method, ...args);
+      } catch (err) {
+        console.error("Hub call failed:", err);
+      }
     },
 
     [connect]
@@ -221,20 +231,29 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const sendStatements = useCallback(
     async (roomCode: string, lie: string, factId1: string, factId2: string) => {
       await invokeWithConnection("SendStatements", {roomCode, lie, factId1, factId2});
+      setData(prev => ({ ...prev, 
+        preparationPhaseData: {
+          ...prev.preparationPhaseData, 
+          fact1Id: factId1,
+          fact2Id: factId1,
+          lie: lie
+        }
+       })); 
     },
     [invokeWithConnection]
   );
 
   const sendAnswer = useCallback(
     async (roomCode: string, answerIdx: number) => {
+      console.log("sended");    
       await invokeWithConnection("SendAnswer", {roomCode, answerIdx});
     },
     [invokeWithConnection]
   );
 
   const sendRewardChoice = useCallback(
-    async (factId: string) => {
-      await invokeWithConnection("SendRewardChoice", {factId});
+    async (roomCode: string, factId: string) => {
+      await invokeWithConnection("SendRewardChoice", {roomCode, factId});
     },
     [invokeWithConnection]
   );

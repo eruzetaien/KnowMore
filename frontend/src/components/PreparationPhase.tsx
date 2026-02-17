@@ -14,11 +14,12 @@ import PlayerState from "./PlayerState";
 import CouponCard from "./CouponCard";
 import type { FactForGame } from "../types/factType";
 import { CountdownTimer } from "./CountdownTimer";
+import { PlayerSlot } from "../types/playerType";
 
 type PaperId = "table-of-content" | "content";
 
 export default function PreparationPhase() {
-  const { allPlayerData, isLoading: hubLoading, sendStatements, room, preparationPhaseData } = useGameHub();
+  const { allPlayerData, isLoading: hubLoading, sendStatements, room, preparationPhaseData, clientPlayerData } = useGameHub();
 
   const factGroups = preparationPhaseData.playerFacts;
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
@@ -30,8 +31,6 @@ export default function PreparationPhase() {
 
   const [selectedFacts, setSelectedFacts] = useState<FactForGame[]>([]);
   const [lie, setLie] = useState("");
-
-  const [isStatementSent, setIsStatementSend] = useState<boolean>(false);
 
   const [isTimerRunning, setIsTimerRunning] = useState(true);
 
@@ -59,7 +58,6 @@ export default function PreparationPhase() {
       return;
     }
     await sendStatements(room.code, lie, selectedFacts[0].id, selectedFacts[1].id);
-    setIsStatementSend(true);
     setIsTimerRunning(false);
   };
 
@@ -82,6 +80,12 @@ export default function PreparationPhase() {
   };
 
   const isTop = (card: PaperId) => order[0] === card;
+
+  const isPlayerReady =
+    (clientPlayerData.slot == PlayerSlot.Player1 && allPlayerData.player1?.isReady) ||
+    (clientPlayerData.slot == PlayerSlot.Player2 && allPlayerData.player2?.isReady);
+  
+  const playerFacts = preparationPhaseData.playerFacts.flatMap(group => group.facts);
 
   return (
     <div className="h-screen w-screen flex flex-col ">
@@ -112,37 +116,47 @@ export default function PreparationPhase() {
                 <div className="flex flex-col gap-y-2">
                   <div
                     onClick={() => {
-                      if (!isStatementSent) {
+                      if (!isPlayerReady) {
                         setIsFactOpen(true);
                       }
                     }}
-                    className={`${!isStatementSent ? "hover:scale-101 cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
+                    className={`${!isPlayerReady ? "hover:scale-101 cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
                   >
                     <CouponCard>
                       <div style={{ opacity: selectedFacts?.[0] ? 1 : 0.5 }}>
-                        {selectedFacts?.[0]?.description || "Pick your fact to play"}
+                        {
+                          preparationPhaseData.fact1Id != null
+                            ? playerFacts.find(f => f.id === preparationPhaseData.fact1Id)
+                                ?.description
+                            : selectedFacts?.[0]?.description ?? "Pick your fact to play"
+                        }
                       </div>
                     </CouponCard>
                   </div>
 
                   <div
                     onClick={() => {
-                      if (!isStatementSent) {
+                      if (!isPlayerReady) {
                         setIsFactOpen(true);
                       }
                     }}
-                    className={`${!isStatementSent ? "hover:scale-101 cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
+                    className={`${!isPlayerReady ? "hover:scale-101 cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
                   >
                     <CouponCard>
                       <div style={{ opacity: selectedFacts?.[1] ? 1 : 0.5 }}>
-                        {selectedFacts?.[1]?.description || "Pick your fact to play"}
+                        {
+                          preparationPhaseData.fact2Id != null
+                            ? playerFacts.find(f => f.id === preparationPhaseData.fact2Id)
+                                ?.description
+                            : selectedFacts?.[1]?.description ?? "Pick your fact to play"
+                        }
                       </div>
                     </CouponCard>
                   </div>
 
                   <CouponCard color={"red"}>
                     <textarea
-                      value={lie}
+                      value={(isPlayerReady ? preparationPhaseData.lie : lie)}
                       onChange={(e) => {
                         setLie(e.target.value);
                         e.target.style.height = "auto";
@@ -150,8 +164,8 @@ export default function PreparationPhase() {
                       }}
                       placeholder="Write your lie"
                       className={`w-full resize-none overflow-hidden bg-transparent border-0 outline-none focus:outline-none text-inherit placeholder:opacity-70"
-                        ${!isStatementSent ? "" : "opacity-50 cursor-not-allowed"}`}
-                      disabled={isStatementSent}
+                        ${!isPlayerReady ? "" : "opacity-50 cursor-not-allowed"}`}
+                      disabled={isPlayerReady}
                     />
                   </CouponCard>
                 </div>
@@ -169,7 +183,7 @@ export default function PreparationPhase() {
           </div>
 
           <div className="pb-12">
-            {isStatementSent ? (
+            {isPlayerReady ? (
               <p className="text-3xl">
                 Waiting opponent's decision ...
               </p>

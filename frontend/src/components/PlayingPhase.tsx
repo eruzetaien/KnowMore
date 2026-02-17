@@ -26,8 +26,7 @@ export default function PlayingPhase() {
 
   const [isTimerRunning, setIsTimerRunning] = useState(true);
   
-  // Determine if this player already submitted an answer
-  const isAnswerSent =
+  const isPlayerReady =
     (clientPlayerData.slot == PlayerSlot.Player1 && allPlayerData.player1?.isReady) ||
     (clientPlayerData.slot == PlayerSlot.Player2 && allPlayerData.player2?.isReady);
 
@@ -65,11 +64,11 @@ export default function PlayingPhase() {
                       <span
                         className={`rounded cursor-pointer transition text-xl
                           ${
-                            selectedIdx === opt.idx ? "red-highlight" : ""
+                            selectedIdx === opt.idx || (isPlayerReady && playingPhaseData.playerAnswer === opt.idx) ? "red-highlight" : ""
                           } ${
-                            isAnswerSent ? "opacity-50 cursor-not-allowed" : ""
+                            isPlayerReady ? "opacity-50 cursor-not-allowed" : ""
                           }`}
-                        onClick={() => !isAnswerSent && setSelectedIdx(opt.idx)}
+                        onClick={() => !isPlayerReady && setSelectedIdx(opt.idx)}
                       >
                         {opt.description}
                       </span>
@@ -92,7 +91,7 @@ export default function PlayingPhase() {
           </div>
 
           <div className="pb-12">
-            {isAnswerSent ? (
+            {isPlayerReady ? (
               <p className="text-3xl">
                 Waiting opponent's decision ...
               </p>

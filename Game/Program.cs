@@ -8,7 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Load .env variables
 Env.Load(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
 
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(opt =>
+{
+    opt.EnableDetailedErrors = true;
+});
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect("localhost"));
 
 builder.Services

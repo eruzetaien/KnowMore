@@ -52,32 +52,29 @@ public class SetPlayerReadyStateRequest()
     public bool IsReady { get; set; }
 }
 
-public class SendEmoticonRequest()
+public class SendEmoticonRequest : RoomRequest
 {
-    public string RoomCode { get; set; } = string.Empty;
     public Emoticon Emoticon { get; set; }
 }
 
-public class SendStatementsRequest()
+public class SendStatementsRequest : RoomRequest
 {
-    public string RoomCode { get; set; } = string.Empty;
     public string Lie { get; set; } = string.Empty;
     public string FactId1 { get; set; } = string.Empty;
     public string FactId2 { get; set; } = string.Empty;
 }
 
-public class SendAnswerRequest()
+public class SendAnswerRequest : RoomRequest
 {
-    public string RoomCode { get; set; } = string.Empty;
     public int AnswerIdx { get; set; }
 }
 
-public class SendRewardChoiceRequest()
+public class SendRewardChoiceRequest : RoomRequest
 {
     public string FactId { get; set;} = string.Empty;
 }
 
-public class RoomCodeDto()
+public class RoomCodeDto
 {
     public string RoomCode {get; set;} = string.Empty;
 }
