@@ -40,7 +40,12 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string roomKey = $"{RedisConstant.RoomPrefix}{request.RoomCode}";
-        Room room = await _redisService.GetAsync<Room>(roomKey) ?? throw new HubException($"Room not found");
+        Room? room = await _redisService.GetAsync<Room>(roomKey);
+        if (room == null)
+        {
+            await ValidateAndCleanupUserRoomAsync(userId, request.RoomCode);
+            throw new HubException($"Room not found");
+        }
 
         PlayerSlot playerSlot = PlayerSlot.None;
         if (room.Player1.Id == userId)
@@ -83,7 +88,12 @@ public class GameHub : Hub
         long userId = GetUserId();
 
         string roomKey = $"{RedisConstant.RoomPrefix}{request.RoomCode}";
-        Room room = await _redisService.GetAsync<Room>(roomKey) ?? throw new HubException($"Room not found");
+        Room? room = await _redisService.GetAsync<Room>(roomKey);
+        if (room == null)
+        {
+            await ValidateAndCleanupUserRoomAsync(userId, request.RoomCode);
+            throw new HubException($"Room not found");
+        }
 
         PlayerSlot playerSlot = room.GetPlayerSlot(userId);
 
@@ -428,7 +438,12 @@ public class GameHub : Hub
     {
         long userId = GetUserId();
         string roomKey = $"{RedisConstant.RoomPrefix}{request.RoomCode}";
-        Room room = await _redisService.GetAsync<Room>(roomKey) ?? throw new HubException($"Room not found");
+        Room? room = await _redisService.GetAsync<Room>(roomKey);
+        if (room == null)
+        {
+            await ValidateAndCleanupUserRoomAsync(userId,request.RoomCode);
+            throw new HubException($"Room not found");
+        }
 
         if (room.GetPlayerSlot(userId) != PlayerSlot.Player1)
             return;
@@ -625,9 +640,17 @@ public class GameHub : Hub
                 }
             );
         }
+    }
 
+    private async Task ValidateAndCleanupUserRoomAsync(long userId, string roomCode)
+    {
+        string userRoomKey = $"{RedisConstant.UserRoomPrefix}{userId}";
+        string? storedRoomCode = await _redisService.GetAsync<string>(userRoomKey);
 
-
+        if (storedRoomCode == roomCode)
+        {
+            await _redisService.DeleteAsync(userRoomKey);
+        }
     }
 
 }
