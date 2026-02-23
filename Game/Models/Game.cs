@@ -55,6 +55,7 @@ public class GameData : HasPlayersBase
     public int Player2Score { get; set; }
     public string? Player1Reward { get; set; }
     public string? Player2Reward { get; set; }
+    public long PlayerPhaseEndsAt { get; set; }
     public List<FactGroupDTO> Player1Facts { get; set; } = [];
     public List<FactGroupDTO> Player2Facts { get; set; } = [];
     public Dictionary<long, string> PlayerFactDescriptionMap { get; set; } = [];

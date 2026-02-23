@@ -290,14 +290,16 @@ public class GameHub : Hub
         }
         game.Player1Statements = [];
         game.Player2Statements = [];
+        game.PlayerPhaseEndsAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 180; // 3 minutes
         game.Phase = GamePhase.Preparation;
         await _redisService.UpdateAsync<GameData>(gameKey, game);
 
+        long playerRemainingTime = game.PlayerPhaseEndsAt - DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         await Clients.User(game.Player1.Id.ToString()).SendAsync("InitPreparationPhase",
-            new { playerFacts = game.Player1Facts });
+            new { playerFacts = game.Player1Facts, playerRemainingTime });
 
         await Clients.User(game.Player2!.Id.ToString()).SendAsync("InitPreparationPhase",
-            new { playerFacts = game.Player2Facts });
+            new { playerFacts = game.Player2Facts, playerRemainingTime });
 
         await Clients.Group(game.RoomCode).SendAsync("SetGamePhase",
             new { phase = GamePhase.Preparation });
@@ -308,6 +310,7 @@ public class GameHub : Hub
         game.Player1.IsReady = game.Player2!.IsReady = false;
         game.Player1Answer = null;
         game.Player2Answer = null;
+        game.PlayerPhaseEndsAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 180; // 3 minutes
         game.Phase = GamePhase.Playing;
         await _redisService.UpdateAsync<GameData>(gameKey, game);
 
@@ -337,9 +340,11 @@ public class GameHub : Hub
                 desc = game.PlayerFactDescriptionMap[id];
             player2Statements.Add(new { idx = i, description = desc });
         }
+        long playerRemainingTime = game.PlayerPhaseEndsAt - DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
         // Send Player 2 statement to Player 1, its opponent
         await Clients.User(game.Player1.Id.ToString()).SendAsync("InitPlayingPhase",
-            new { OpponentStatements = player2Statements });
+            new { OpponentStatements = player2Statements, playerRemainingTime });
 
         await Clients.Group(game.RoomCode).SendAsync("SetGamePhase",
             new { phase = GamePhase.Playing });
@@ -520,6 +525,7 @@ public class GameHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, request.RoomCode);
 
         bool isPlayer1 = playerSlot == PlayerSlot.Player1;
+        long playerRemainingTime = gameData.PlayerPhaseEndsAt - DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         if (gameData.Phase == GamePhase.Preparation)
         {
@@ -544,7 +550,10 @@ public class GameHub : Hub
                 new
                 {
                     RoomCode = gameData.RoomCode,
-                    Slot = playerSlot,
+                    ClientPlayerData = new
+                    {
+                        PlayerSlot = playerSlot,
+                    },
                     AllPlayerData = new
                     {
                         Player1 = player1Data,
@@ -557,7 +566,8 @@ public class GameHub : Hub
                         PlayerFacts = isPlayer1 ? gameData.Player1Facts : gameData.Player2Facts,
                         Fact1Id = fact1Id,
                         Fact2Id = fact2Id,
-                        Lie = isPlayer1 ? gameData.Player1Lie : gameData.Player2Lie
+                        Lie = isPlayer1 ? gameData.Player1Lie : gameData.Player2Lie,
+                        PlayerRemainingTime = playerRemainingTime,
                     },
                 }
             );
@@ -581,7 +591,10 @@ public class GameHub : Hub
                 new
                 {
                     RoomCode = gameData.RoomCode,
-                    Slot = playerSlot,
+                    ClientPlayerData = new
+                    {
+                        PlayerSlot = playerSlot,
+                    },
                     AllPlayerData = new
                     {
                         Player1 = player1Data,
@@ -593,6 +606,7 @@ public class GameHub : Hub
                     PlayingPhaseData = new { 
                         OpponentStatements = opponentStatementsWithIdx,
                         PlayerAnswer = isPlayer1 ? gameData.Player1Answer : gameData.Player2Answer,
+                        PlayerRemainingTime = playerRemainingTime,
                     }
                 }
             );
@@ -619,7 +633,11 @@ public class GameHub : Hub
                 new
                 {
                     RoomCode = gameData.RoomCode,
-                    Slot = playerSlot,
+                    ClientPlayerData = new
+                    {
+                        PlayerSlot = playerSlot,
+                        PlayerRemainingTime = playerRemainingTime
+                    },
                     AllPlayerData = new
                     {
                         Player1 = player1Data,

@@ -1,17 +1,23 @@
 import { useEffect, useState } from "react";
 
 type CountdownTimerProps = {
-  initialSeconds: number;
-  isRunning: boolean;      // controls start/stop
-  onComplete?: () => void; // optional callback when timer hits 0
+  isRunning: boolean;
+  remainingSeconds: number | null;
+  onComplete?: () => void;
 };
 
 export function CountdownTimer({
-  initialSeconds,
   isRunning,
+  remainingSeconds,
   onComplete,
 }: CountdownTimerProps) {
-  const [timeLeft, setTimeLeft] = useState(initialSeconds);
+  const [timeLeft, setTimeLeft] = useState(remainingSeconds ?? 0);
+
+  useEffect(() => {
+    if (remainingSeconds !== null) {
+      setTimeLeft(remainingSeconds);
+    }
+  }, [remainingSeconds]);
 
   useEffect(() => {
     if (!isRunning || timeLeft <= 0) return;

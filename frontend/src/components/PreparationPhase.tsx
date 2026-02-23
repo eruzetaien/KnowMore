@@ -92,8 +92,8 @@ export default function PreparationPhase() {
       <div className="h-full w-full grid grid-rows-8">
         <div className="row-span-2 flex flex-col justify-between items-center pt-18">
             <CountdownTimer
-              initialSeconds={180}
               isRunning={isTimerRunning}
+              remainingSeconds={preparationPhaseData.playerRemainingTime}
               onComplete={() => alert("Time's up!")}
             />;
 

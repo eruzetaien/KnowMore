@@ -101,9 +101,10 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setData(prev => ({...prev,
         preparationPhaseData : {
           playerFacts: response.playerFacts,
+          playerRemainingTime: response.playerRemainingTime,
           fact1Id: undefined,
           fact2Id: undefined,
-          lie:undefined
+          lie:undefined,
         }
       }));
     });
@@ -112,6 +113,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setData(prev => ({...prev, 
         playingPhaseData: {
           opponentStatements: response.opponentStatements,
+          playerRemainingTime: response.playerRemainingTime,
           playerAnswer:undefined
         }
       }));
@@ -140,7 +142,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     connection.on("PlayerJoined", (response: JoinRoomResponse) => {
       setData(prev => ({ ...prev,
-        clientPlayerData: {slot:response.slot}
+        clientPlayerData: {...prev.clientPlayerData, slot:response.slot}
       }))
     });
 
@@ -158,7 +160,7 @@ export const GameHubProvider: React.FC<{ children: React.ReactNode }> = ({ child
           ...prev,
           room: { ...prev.room, code: response.roomCode },
           game: { ...prev.game, phase: response.phase },
-          clientPlayerData: { ...prev.clientPlayerData, slot: response.slot },
+          clientPlayerData: response.clientPlayerData,
           allPlayerData: response.allPlayerData,
           preparationPhaseData: prev.preparationPhaseData,
           playingPhaseData: prev.playingPhaseData,
