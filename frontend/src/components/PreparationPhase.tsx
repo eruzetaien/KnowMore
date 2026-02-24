@@ -32,8 +32,6 @@ export default function PreparationPhase() {
   const [selectedFacts, setSelectedFacts] = useState<FactForGame[]>([]);
   const [lie, setLie] = useState("");
 
-  const [isTimerRunning, setIsTimerRunning] = useState(true);
-
   if (hubLoading) return <p>Loading hub connection...</p>;
 
   const handleFactSelect = (fact: FactForGame) => {
@@ -58,7 +56,6 @@ export default function PreparationPhase() {
       return;
     }
     await sendStatements(room.code, lie, selectedFacts[0].id, selectedFacts[1].id);
-    setIsTimerRunning(false);
   };
 
   const [order, setOrder] = useState<[PaperId, PaperId]>([
@@ -84,6 +81,10 @@ export default function PreparationPhase() {
   const isPlayerReady =
     (clientPlayerData.slot == PlayerSlot.Player1 && allPlayerData.player1?.isReady) ||
     (clientPlayerData.slot == PlayerSlot.Player2 && allPlayerData.player2?.isReady);
+
+  console.log(clientPlayerData);
+  console.log(clientPlayerData.slot == PlayerSlot.Player1);
+  console.log(allPlayerData.player1?.isReady);
   
   const playerFacts = preparationPhaseData.playerFacts.flatMap(group => group.facts);
 
@@ -92,7 +93,7 @@ export default function PreparationPhase() {
       <div className="h-full w-full grid grid-rows-8">
         <div className="row-span-2 flex flex-col justify-between items-center pt-18">
             <CountdownTimer
-              isRunning={isTimerRunning}
+              isRunning={!isPlayerReady}
               remainingSeconds={preparationPhaseData.playerRemainingTime}
               onComplete={() => alert("Time's up!")}
             />;

@@ -20,12 +20,9 @@ export default function PlayingPhase() {
   const handleSubmit = () => {
     if (selectedIdx !== null) {
       sendAnswer(room.code, selectedIdx);
-      setIsTimerRunning(false);
     }
   };
 
-  const [isTimerRunning, setIsTimerRunning] = useState(true);
-  
   const isPlayerReady =
     (clientPlayerData.slot == PlayerSlot.Player1 && allPlayerData.player1?.isReady) ||
     (clientPlayerData.slot == PlayerSlot.Player2 && allPlayerData.player2?.isReady);
@@ -35,7 +32,7 @@ export default function PlayingPhase() {
       <div className="h-full w-full grid grid-rows-8">
         <div className="row-span-2 flex flex-col justify-between items-center pt-18">
              <CountdownTimer
-                isRunning={isTimerRunning}
+                isRunning={!isPlayerReady}
                 remainingSeconds={playingPhaseData.playerRemainingTime}
                 onComplete={() => alert("Time's up!")}
               />;

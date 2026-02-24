@@ -527,137 +527,112 @@ public class GameHub : Hub
         bool isPlayer1 = playerSlot == PlayerSlot.Player1;
         long playerRemainingTime = gameData.PlayerPhaseEndsAt - DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
+        object? preparationPhaseData = null;
+        object? playingPhaseData = null;
+        object? resultPhaseData = null;
+
         if (gameData.Phase == GamePhase.Preparation)
         {
-            IList<long> playerStatements = isPlayer1 ? gameData.Player1Statements : gameData.Player2Statements;
-            string? fact1Id = null;
-            string? fact2Id = null;
-            if (playerStatements.Any())
+            var playerStatements = isPlayer1
+                ? gameData.Player1Statements
+                : gameData.Player2Statements;
+
+            var facts = playerStatements
+                .Where(x => x != 0)
+                .Take(2)
+                .Select(x => x.ToString())
+                .ToList();
+
+            preparationPhaseData = new
             {
-                IList<string> playerStatementsStr = playerStatements
-                    .Where(x => x != 0) // exclude lie
-                    .Select(x => x.ToString())
-                    .ToList();
-
-                if (playerStatementsStr.Count() >= 2)
-                {
-                    fact1Id = playerStatementsStr[0];
-                    fact2Id = playerStatementsStr[1];
-                }
-            }
-
-            await Clients.Caller.SendAsync("LoadGameData",
-                new
-                {
-                    RoomCode = gameData.RoomCode,
-                    ClientPlayerData = new
-                    {
-                        PlayerSlot = playerSlot,
-                    },
-                    AllPlayerData = new
-                    {
-                        Player1 = player1Data,
-                        Player2 = player2Data,
-                        Player1Score = gameData.Player1Score,
-                        Player2Score = gameData.Player2Score,
-                    },
-                    Phase = gameData.Phase,
-                    PreparationPhaseData = new { 
-                        PlayerFacts = isPlayer1 ? gameData.Player1Facts : gameData.Player2Facts,
-                        Fact1Id = fact1Id,
-                        Fact2Id = fact2Id,
-                        Lie = isPlayer1 ? gameData.Player1Lie : gameData.Player2Lie,
-                        PlayerRemainingTime = playerRemainingTime,
-                    },
-                }
-            );
-        } else if (gameData.Phase == GamePhase.Playing) 
-        {
-            var opponentStatements = playerSlot == PlayerSlot.Player1 ? gameData.Player2Statements : gameData.Player1Statements;
-            var opponentStatementsWithIdx = new List<Object>();
-
-            for (int i = 0; i < opponentStatements.Length; i++)
-            {
-                long id = opponentStatements[i];
-                string desc;
-                if (id == 0)
-                    desc = playerSlot == PlayerSlot.Player1 ? gameData.Player2Lie : gameData.Player1Lie;
-                else
-                    desc = gameData.PlayerFactDescriptionMap[id];
-                opponentStatementsWithIdx.Add(new { idx = i, description = desc });
-            }
-
-            await Clients.Caller.SendAsync("LoadGameData",
-                new
-                {
-                    RoomCode = gameData.RoomCode,
-                    ClientPlayerData = new
-                    {
-                        PlayerSlot = playerSlot,
-                    },
-                    AllPlayerData = new
-                    {
-                        Player1 = player1Data,
-                        Player2 = player2Data,
-                        Player1Score = gameData.Player1Score,
-                        Player2Score = gameData.Player2Score,
-                    },
-                    Phase = gameData.Phase,
-                    PlayingPhaseData = new { 
-                        OpponentStatements = opponentStatementsWithIdx,
-                        PlayerAnswer = isPlayer1 ? gameData.Player1Answer : gameData.Player2Answer,
-                        PlayerRemainingTime = playerRemainingTime,
-                    }
-                }
-            );
-        } 
-        else
-        {
-            bool isPlayer1Correct = gameData.Player1Answer.HasValue && gameData.Player1Statements[gameData.Player1Answer.Value] == 0;
-            bool isPlayer2Correct = gameData.Player2Answer.HasValue && gameData.Player2Statements[gameData.Player2Answer.Value] == 0;
-
-            var rewardStatements = new List<object>();
-            if (isPlayer1)
-            {
-                rewardStatements = isPlayer1Correct
-                    ? await GetRewardStatements(gameData.Player2Statements, gameData.Player1.Id)
-                    : [];
-            } else
-            {
-                rewardStatements = isPlayer2Correct
-                    ? await GetRewardStatements(gameData.Player1Statements, gameData.Player2!.Id)
-                    : [];
-            }
-
-            await Clients.Caller.SendAsync("LoadGameData",
-                new
-                {
-                    RoomCode = gameData.RoomCode,
-                    ClientPlayerData = new
-                    {
-                        PlayerSlot = playerSlot,
-                        PlayerRemainingTime = playerRemainingTime
-                    },
-                    AllPlayerData = new
-                    {
-                        Player1 = player1Data,
-                        Player2 = player2Data,
-                        Player1Score = gameData.Player1Score,
-                        Player2Score = gameData.Player2Score,
-                    },
-                    Phase = gameData.Phase,
-                    ResultPhaseData = new
-                    {
-                        IsPlayer1Correct = isPlayer1Correct,
-                        IsPlayer2Correct = isPlayer2Correct,
-                        RewardStatements = rewardStatements,
-                        Player1Score = gameData.Player1Score,
-                        Player2Score = gameData.Player2Score,
-                        PlayerReward = isPlayer1 ? gameData.Player1Reward : gameData.Player2Reward,
-                    }
-                }
-            );
+                PlayerFacts = isPlayer1 ? gameData.Player1Facts : gameData.Player2Facts,
+                Fact1Id = facts.ElementAtOrDefault(0),
+                Fact2Id = facts.ElementAtOrDefault(1),
+                Lie = isPlayer1 ? gameData.Player1Lie : gameData.Player2Lie,
+                PlayerRemainingTime = playerRemainingTime
+            };
         }
+        else if (gameData.Phase == GamePhase.Playing)
+        {
+            var opponentStatements = playerSlot == PlayerSlot.Player1
+                ? gameData.Player2Statements
+                : gameData.Player1Statements;
+
+            var opponentLie = playerSlot == PlayerSlot.Player1
+                ? gameData.Player2Lie
+                : gameData.Player1Lie;
+
+            var opponentStatementsWithIdx = opponentStatements
+                .Select((id, idx) => new
+                {
+                    idx,
+                    description = id == 0
+                        ? opponentLie
+                        : gameData.PlayerFactDescriptionMap[id]
+                })
+                .ToList();
+
+            playingPhaseData = new
+            {
+                OpponentStatements = opponentStatementsWithIdx,
+                PlayerAnswer = isPlayer1 ? gameData.Player1Answer : gameData.Player2Answer,
+                PlayerRemainingTime = playerRemainingTime
+            };
+        }
+        else // Result phase
+        {
+            bool isPlayer1Correct = gameData.Player1Answer.HasValue &&
+                gameData.Player1Statements[gameData.Player1Answer.Value] == 0;
+
+            bool isPlayer2Correct = gameData.Player2Answer.HasValue &&
+                gameData.Player2Statements[gameData.Player2Answer.Value] == 0;
+
+            bool isCurrentPlayerCorrect = isPlayer1 ? isPlayer1Correct : isPlayer2Correct;
+
+            var opponentStatements = isPlayer1
+                ? gameData.Player2Statements
+                : gameData.Player1Statements;
+
+            var opponentId = isPlayer1
+                ? gameData.Player1.Id
+                : gameData.Player2!.Id;
+
+            var rewardStatements = isCurrentPlayerCorrect
+                ? await GetRewardStatements(opponentStatements, opponentId)
+                : new List<object>();
+
+            resultPhaseData = new
+            {
+                IsPlayer1Correct = isPlayer1Correct,
+                IsPlayer2Correct = isPlayer2Correct,
+                RewardStatements = rewardStatements,
+                Player1Score = gameData.Player1Score,
+                Player2Score = gameData.Player2Score,
+                PlayerReward = isPlayer1 ? gameData.Player1Reward : gameData.Player2Reward
+            };
+        }
+
+        await Clients.Caller.SendAsync("LoadGameData", new
+        {
+            RoomCode = gameData.RoomCode,
+            ClientPlayerData = new
+            {
+                Slot = playerSlot,
+                PlayerRemainingTime = playerRemainingTime
+            },
+            AllPlayerData = new
+            {
+                Player1 = player1Data,
+                Player2 = player2Data,
+                Player1Score = gameData.Player1Score,
+                Player2Score = gameData.Player2Score
+            },
+            Phase = gameData.Phase,
+
+            PreparationPhaseData = preparationPhaseData,
+            PlayingPhaseData = playingPhaseData,
+            ResultPhaseData = resultPhaseData
+        });
     }
 
     private async Task ValidateAndCleanupUserRoomAsync(long userId, string roomCode)
